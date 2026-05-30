@@ -17,61 +17,30 @@ A personal language learning web app. Type a phrase, hear it spoken at a slow "l
 
 ## Architecture
 
-```
-              ┌─────────────────────┐
-              │  GitHub repository  │
-              │      (main)         │
-              └──────────┬──────────┘
-                         │ git push
-              ┌──────────┴──────────┐
-              ▼                     ▼
-     ┌────────────────┐    ┌────────────────┐
-     │ deploy-frontend│    │ deploy-backend │
-     │  vite build    │    │  sam deploy    │
-     │  → gh-pages    │    │  uses AWS creds│
-     └───────┬────────┘    └───────┬────────┘
-             │ publish             │ assumes IAM deploy user
-             ▼                     ▼
-     ┌──────────────┐      ┌──────────────────┐
-     │ GitHub Pages │      │ IAM deploy user  │
-     │ static HTTPS │      │ Lambda / IAM /   │
-     └──────┬───────┘      │ S3 / DynamoDB /  │
-            │              │ CloudFormation   │
-            │ user loads   └─────────┬────────┘
-            ▼                        │ CloudFormation
-     ┌──────────────────────────┐    │ provisions resources
-     │  Browser (React + MUI)   │    ▼
-     │                          │
-     │ • HMAC-TOTP token gen    │── POST audio ──► ┌──────────────┐
-     │ • calls Google TTS       │                  │  Google TTS  │
-     │   directly (proxy URL    │◄── base64 MP3 ──│  proxy       │
-     │   in localStorage)       │                  │ cxl-services │
-     │ • plays + caches audio   │                  └──────────────┘
-     │ • saves prefs in LS      │
-     └──┬──────────────┬────────┘
-        │              │ replay (direct GET .mp3, no Lambda)
-        │ POST /phrases│
-        │ + audioBase64│
-        │ GET /phrases │
-        │ PUT /phrases │
-        │ DEL /phrases │
-        ▼              ▼
-     ┌──────────────┐ ┌─────────────────────────┐
-     │   Lambda     │ │  S3 audio bucket        │
-     │ Function URL │ │  public-read + CORS     │
-     │ Node 20      │ │  audio/<lang>/<sha>.mp3 │
-     │ Concurrency=2│ └─────────────────────────┘
-     └──┬────┬──────┘            ▲
-        │    │ upload audio      │
-        │    └───────────────────┘
-        │ write/read records
-        ▼
-     ┌──────────────────────┐
-     │  DynamoDB            │
-     │  tts-phrases         │
-     │  PK: userId="default"│
-     │  SK: phraseId (uuid) │
-     └──────────────────────┘
+```mermaid
+flowchart TD
+    repo["GitHub repo (main)"]
+
+    repo -->|git push| fe-workflow["deploy-frontend\nvite build → gh-pages"]
+    repo -->|git push| be-workflow["deploy-backend\nsam deploy"]
+
+    fe-workflow -->|publish| pages["GitHub Pages\nstatic HTTPS"]
+    be-workflow -->|CloudFormation| aws["AWS resources\nLambda · S3 · DynamoDB"]
+
+    pages -->|user loads| browser["Browser\nReact + MUI"]
+
+    browser -->|"POST (text, lang)\nbase64 MP3 in body"| tts["Google TTS proxy\ncxl-services.appspot.com"]
+    tts -->|"{ audioContent: base64 }"| browser
+
+    browser -->|plays locally\nin-memory cache| browser
+
+    browser -->|"POST /phrases\n+ audioBase64"| lambda["Lambda Function URL\nNode 20 · Concurrency=2"]
+    browser -->|"GET / PUT / DELETE /phrases"| lambda
+
+    lambda -->|upload MP3| s3["S3 audio bucket\npublic-read\naudio/lang/sha.mp3"]
+    lambda -->|write / read records| dynamo["DynamoDB\ntts-phrases\nPK: userId · SK: phraseId"]
+
+    browser -->|"replay: direct GET .mp3\n(no Lambda)"| s3
 ```
 
 ## Project Structure
@@ -252,5 +221,3 @@ npm run build          # production build → dist/  (runs tsc, then vite build)
 ## Cost
 
 ~$0.01/month. Everything within AWS free tiers. Google TTS cost depends on your custom endpoint plan — the browser's in-memory audio cache and S3 replay (zero Lambda invocations for replay) keep TTS calls to one per unique (text, pace) pair.
-
-See [PLAN.md](PLAN.md) for the original architecture spec and development phases.
