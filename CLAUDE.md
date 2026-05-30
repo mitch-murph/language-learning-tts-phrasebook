@@ -28,16 +28,41 @@ language-learning-tts-phrasebook/
 │       ├── components/
 │       │   ├── PhraseInput.tsx
 │       │   ├── PhraseList.tsx
-│       │   └── Settings.tsx   ← TTS URL + API key input, stored in localStorage
+│       │   └── Settings.tsx   ← TTS URL + audio base URL, stored in localStorage
 │       ├── api.ts             ← Lambda calls (attaches TTS credentials from localStorage)
 │       └── crypto.ts          ← HMAC-TOTP token generation (Web Crypto API)
 └── backend/
     └── src/
-        ├── handler.ts         ← Lambda entry point
-        ├── tts.ts             ← S3 cache + TTS call (uses x-tts-url / x-tts-key headers)
-        ├── phrases.ts         ← DynamoDB CRUD
-        └── auth.ts            ← HMAC-TOTP verification
+        ├── handler.ts         ← Lambda entry point + composition root (wires all deps)
+        ├── domain.ts          ← Phrase entity type
+        ├── routes/
+        │   └── phrases.ts     ← HTTP parsing, ValidationError, dispatches to use cases
+        ├── usecases/
+        │   ├── synthesizePhrase.ts  ← play only: TTS → return audio
+        │   ├── savePhrase.ts        ← save: TTS → S3 → DynamoDB
+        │   ├── listPhrases.ts       ← fetch all saved phrases
+        │   └── deletePhrase.ts      ← remove a phrase
+        ├── repositories/
+        │   └── phraseRepository.ts  ← IPhraseRepository interface + DynamoDB impl
+        ├── services/
+        │   ├── ttsService.ts        ← ITtsService interface + HTTP impl
+        │   └── audioStore.ts        ← IAudioStore interface + S3 impl
+        └── utils/
+            └── auth.ts              ← HMAC-TOTP verification (pure function)
 ```
+
+## Backend Architecture
+
+Clean architecture with explicit layers. Each use case depends only on interfaces, never on concrete AWS classes — making them testable with simple fakes.
+
+| Layer | Responsibility |
+|---|---|
+| `handler.ts` | Lambda entry, CORS, auth check, HTTP response shaping, composition root |
+| `routes/` | Parse raw HTTP headers/body, throw `ValidationError` for bad input, call use cases |
+| `usecases/` | Business logic — orchestrates services and repositories via interfaces |
+| `repositories/` | Data access — `IPhraseRepository` interface + `DynamoDbPhraseRepository` impl |
+| `services/` | External I/O — `ITtsService` (HTTP TTS call), `IAudioStore` (S3 upload) |
+| `utils/` | Pure functions with no dependencies |
 
 ## Key Design Decisions
 
