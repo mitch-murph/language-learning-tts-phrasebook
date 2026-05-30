@@ -10,6 +10,7 @@ export class SynthesizePhraseUseCase {
   constructor(private tts: ITtsService) {}
 
   async execute(input: SynthesizePhraseInput): Promise<{ audioBase64: string }> {
+    console.log(`[synthesize] "${input.text}" (${input.languageCode})`);
     const audioBase64 = await this.tts.synthesize(input.text, input.languageCode, input.ttsUrl);
     return { audioBase64 };
   }
