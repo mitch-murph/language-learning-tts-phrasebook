@@ -67,7 +67,7 @@ export default function AddLanguageModal({ existing, onClose, onAdd }: Props) {
             placeholder="vi-VN"
             spellCheck={false}
             fullWidth
-            helperText="Hint for the TTS voice. If blank or unsupported, en-US is used as a fallback."
+            helperText={<>Hint for the TTS voice. If blank or unsupported, en-US is used as a fallback. <a href="https://docs.cloud.google.com/text-to-speech/docs/list-voices-and-types" target="_blank" rel="noreferrer">Check supported codes</a>.</>}
             slotProps={{ inputLabel: { shrink: true } }}
           />
           <FormControlLabel
