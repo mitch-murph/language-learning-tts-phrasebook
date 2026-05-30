@@ -3,7 +3,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { getAudioUrl, type Phrase } from '../../api/client';
-import { playFromUrl, type PlayController } from '../../playback/player';
+import { playPhraseFromUrls, type Mode, type PlayController } from '../../playback/player';
+import ModeSelector from '../compose/ModeSelector';
 import PhraseRow from './PhraseRow';
 import LanguageGroup from './LanguageGroup';
 import EditPhraseModal from './EditPhraseModal';
@@ -33,7 +34,9 @@ interface Props {
 export default function Library({ phrases, loading, error, onUpdated, onDeleted }: Props) {
   const t = useTheme();
   const isComic = t.appName === 'comic';
+  const [mode, setMode] = useState<Mode>('normal');
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [stageLabel, setStageLabel] = useState('');
   const [editing, setEditing] = useState<Phrase | null>(null);
   const [deletingPhrase, setDeletingPhrase] = useState<Phrase | null>(null);
   const playRef = useRef<PlayController | null>(null);
@@ -45,16 +48,26 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
       playRef.current?.stop();
       playRef.current = null;
       setPlayingId(null);
+      setStageLabel('');
       return;
     }
     playRef.current?.stop();
     setPlayingId(p.phraseId);
-    const ctl = playFromUrl(getAudioUrl(p.s3Key));
+    setStageLabel('');
+    const ctl = playPhraseFromUrls({
+      normalUrl: getAudioUrl(p.normalS3Key),
+      slowUrl: getAudioUrl(p.slowS3Key),
+      mode,
+      onStage: ({ index, total }) => {
+        if (mode === 'drill') setStageLabel(`${index}/${total}`);
+      },
+    });
     playRef.current = ctl;
     ctl.done.finally(() => {
       if (playRef.current === ctl) {
         playRef.current = null;
         setPlayingId(prev => (prev === p.phraseId ? null : prev));
+        setStageLabel('');
       }
     });
   }
@@ -71,6 +84,10 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
       }}>
         <Typography variant="h2">Library</Typography>
         <CountBadge count={phrases.length} loading={loading} />
+      </Box>
+
+      <Box sx={{ mb: isComic ? '10px' : '14px' }}>
+        <ModeSelector value={mode} onChange={setMode} />
       </Box>
 
       {error && (
@@ -100,6 +117,7 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
               key={p.phraseId}
               phrase={p}
               isPlaying={playingId === p.phraseId}
+              stageLabel={playingId === p.phraseId ? stageLabel : undefined}
               onPlay={() => handlePlay(p)}
               onEdit={() => setEditing(p)}
               onDelete={() => setDeletingPhrase(p)}

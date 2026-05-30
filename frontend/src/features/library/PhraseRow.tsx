@@ -18,12 +18,13 @@ function formatWhen(iso: string): string {
 interface Props {
   phrase: Phrase;
   isPlaying: boolean;
+  stageLabel?: string;
   onPlay: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export default function PhraseRow({ phrase, isPlaying, onPlay, onEdit, onDelete }: Props) {
+export default function PhraseRow({ phrase, isPlaying, stageLabel, onPlay, onEdit, onDelete }: Props) {
   const t = useTheme();
   const isComic = t.appName === 'comic';
 
@@ -75,6 +76,12 @@ export default function PhraseRow({ phrase, isPlaying, onPlay, onEdit, onDelete 
 
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
         <PlayCircle isPlaying={isPlaying} onClick={onPlay} />
+        {isPlaying && stageLabel && (
+          <Box sx={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+            color: 'text.disabled', lineHeight: 1,
+          }}>{stageLabel}</Box>
+        )}
         <Box sx={{ display: 'flex', gap: '6px', mt: '4px' }}>
           <RowActionButton onClick={onEdit}>Edit</RowActionButton>
           <RowActionButton onClick={onDelete} destructive>Delete</RowActionButton>

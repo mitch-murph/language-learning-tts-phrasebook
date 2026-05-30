@@ -4,9 +4,9 @@ import { useTheme } from '@mui/material/styles';
 import type { Mode } from '../../playback/player';
 
 const MODES: { value: Mode; label: string }[] = [
-  { value: 'triple', label: 'Triple' },
-  { value: 'slow',   label: 'Slow' },
   { value: 'normal', label: 'Normal' },
+  { value: 'slow',   label: 'Slow' },
+  { value: 'drill',  label: 'Drill' },
 ];
 
 interface Props {

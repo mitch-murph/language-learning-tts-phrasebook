@@ -9,7 +9,8 @@ export interface Phrase {
   languageCode: string;
   languageName: string;
   nonLatin: boolean;
-  s3Key: string;
+  normalS3Key: string;
+  slowS3Key: string;
   createdAt: string;
   updatedAt?: string;
   transcription?: string;
@@ -17,8 +18,7 @@ export interface Phrase {
 }
 
 export function getAudioUrl(s3Key: string): string {
-  const base = AUDIO_BASE_URL;
-  return `${base}/${s3Key}`;
+  return `${AUDIO_BASE_URL}/${s3Key}`;
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
@@ -38,7 +38,8 @@ export async function savePhrase(args: {
   languageCode: string;
   languageName: string;
   nonLatin: boolean;
-  audioBase64: string;
+  normalAudioBase64: string;
+  slowAudioBase64: string;
   transcription?: string;
   translation?: string;
 }): Promise<Phrase> {

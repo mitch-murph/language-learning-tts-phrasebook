@@ -35,7 +35,7 @@ export default function Composer({ phrases, onSaved }: Props) {
   const [lang, setLang] = useState<Language | null>(null);
   const [transcription, setTranscription] = useState('');
   const [translation, setTranslation] = useState('');
-  const [mode, setMode] = useState<Mode>('triple');
+  const [mode, setMode] = useState<Mode>('normal');
   const [status, setStatus] = useState<{ kind: 'error' | 'retry'; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -79,7 +79,7 @@ export default function Composer({ phrases, onSaved }: Props) {
     const ctl = playPhrase({
       text: trimmed, lang: lang.code, langName: lang.name, mode,
       onStage: ({ index, total }) => {
-        if (mode === 'triple') setStageLabel(`${index}/${total}`);
+        if (mode === 'drill') setStageLabel(`${index}/${total}`);
         else setStageLabel('');
       },
     });
@@ -100,13 +100,17 @@ export default function Composer({ phrases, onSaved }: Props) {
     if (!trimmed || !lang) return;
     setSaving(true);
     try {
-      const audioBase64 = await callTts(trimmed, ttsCode, 'slow', lang?.name ?? '');
+      const [normalAudioBase64, slowAudioBase64] = await Promise.all([
+        callTts(trimmed, ttsCode, 'normal', lang?.name ?? ''),
+        callTts(trimmed, ttsCode, 'slow', lang?.name ?? ''),
+      ]);
       const phrase = await savePhrase({
         text: trimmed,
         languageCode: lang.code,
         languageName: lang.name,
         nonLatin: lang.nonLatin,
-        audioBase64,
+        normalAudioBase64,
+        slowAudioBase64,
         transcription: transcription.trim() || undefined,
         translation: translation.trim() || undefined,
       });
