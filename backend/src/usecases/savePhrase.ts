@@ -7,7 +7,8 @@ export interface SavePhraseInput {
   languageCode: string;
   languageName: string;
   nonLatin: boolean;
-  audioBase64: string;
+  normalAudioBase64: string;
+  slowAudioBase64: string;
   transcription?: string;
   translation?: string;
 }
@@ -17,15 +18,19 @@ export type SavePhraseFn = (input: SavePhraseInput) => Promise<Phrase>;
 export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): SavePhraseFn {
   return async (input) => {
     console.log(`[save] uploading to s3: "${input.text}" (${input.languageCode})`);
-    const s3Key = await audio.upload(input.text, input.languageCode, input.audioBase64);
+    const [normalS3Key, slowS3Key] = await Promise.all([
+      audio.upload(input.text, input.languageCode, input.normalAudioBase64, "normal"),
+      audio.upload(input.text, input.languageCode, input.slowAudioBase64, "slow"),
+    ]);
 
-    console.log("[save] writing to db:", s3Key);
+    console.log("[save] writing to db:", normalS3Key, slowS3Key);
     const phrase = await repo.save({
       text: input.text,
       languageCode: input.languageCode,
       languageName: input.languageName,
       nonLatin: input.nonLatin,
-      s3Key,
+      normalS3Key,
+      slowS3Key,
       transcription: input.transcription,
       translation: input.translation,
     });

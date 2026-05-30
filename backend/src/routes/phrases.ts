@@ -15,14 +15,16 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const languageCode = (b.languageCode as string | undefined) ?? "en-AU";
       const languageName = b.languageName as string | undefined;
       const nonLatin = b.nonLatin;
-      const audioBase64 = b.audioBase64 as string | undefined;
+      const normalAudioBase64 = b.normalAudioBase64 as string | undefined;
+      const slowAudioBase64 = b.slowAudioBase64 as string | undefined;
       const transcription = b.transcription as string | undefined;
       const translation = b.translation as string | undefined;
       if (!text) throw new ValidationError("Missing text");
       if (!languageName) throw new ValidationError("Missing languageName");
       if (typeof nonLatin !== "boolean") throw new ValidationError("Missing nonLatin");
-      if (!audioBase64) throw new ValidationError("Missing audioBase64");
-      return save({ text, languageCode, languageName, nonLatin, audioBase64, transcription, translation });
+      if (!normalAudioBase64) throw new ValidationError("Missing normalAudioBase64");
+      if (!slowAudioBase64) throw new ValidationError("Missing slowAudioBase64");
+      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation });
     },
     async handleGet() {
       return list();

@@ -5,7 +5,8 @@ export interface Phrase {
   languageCode: string;
   languageName: string;
   nonLatin: boolean;
-  s3Key: string;
+  normalS3Key: string;
+  slowS3Key: string;
   createdAt: string;
   updatedAt?: string;
   transcription?: string;
