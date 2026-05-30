@@ -1,10 +1,29 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
-import { verifyToken } from "./auth";
-import { handlePost, handleGet, handleDelete, ValidationError } from "./routes/phrases";
+import { verifyToken } from "./utils/auth";
+import { PhrasesRoute, ValidationError } from "./routes/phrases";
+import { DynamoDbPhraseRepository } from "./repositories/phraseRepository";
+import { HttpTtsService } from "./services/ttsService";
+import { S3AudioStore } from "./services/audioStore";
+import { SynthesizePhraseUseCase } from "./usecases/synthesizePhrase";
+import { SavePhraseUseCase } from "./usecases/savePhrase";
+import { ListPhrasesUseCase } from "./usecases/listPhrases";
+import { DeletePhraseUseCase } from "./usecases/deletePhrase";
 
 const HMAC_SECRET = process.env.HMAC_SECRET!;
 const TABLE_NAME = process.env.TABLE_NAME!;
 const AUDIO_BUCKET = process.env.AUDIO_BUCKET!;
+
+// Composition root — wired once at cold start
+const repo = new DynamoDbPhraseRepository(TABLE_NAME);
+const tts = new HttpTtsService();
+const audio = new S3AudioStore(AUDIO_BUCKET);
+
+const phrases = new PhrasesRoute(
+  new SynthesizePhraseUseCase(tts),
+  new SavePhraseUseCase(tts, audio, repo),
+  new ListPhrasesUseCase(repo),
+  new DeletePhraseUseCase(repo)
+);
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -31,18 +50,15 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   try {
     if (method === "GET" && path === "/phrases") {
-      return ok(await handleGet(TABLE_NAME));
+      return ok(await phrases.handleGet());
     }
-
     if (method === "POST" && path === "/phrases") {
-      return ok(await handlePost(event.headers, event.body ?? "{}", TABLE_NAME, AUDIO_BUCKET));
+      return ok(await phrases.handlePost(event.headers, event.body ?? "{}"));
     }
-
     const deleteMatch = path.match(/^\/phrases\/([^/]+)$/);
     if (method === "DELETE" && deleteMatch) {
-      return ok(await handleDelete(TABLE_NAME, deleteMatch[1]));
+      return ok(await phrases.handleDelete(deleteMatch[1]));
     }
-
     return fail(404, "Not found");
   } catch (e) {
     if (e instanceof ValidationError) return fail(400, e.message);
