@@ -2,7 +2,7 @@ version = 0.1
 
 [default]
 [default.global.parameters]
-stack_name = "tts-phrasebook"
+stack_name = "language-learning-tts-phrasebook"
 
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"

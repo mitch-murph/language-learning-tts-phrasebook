@@ -20,6 +20,7 @@ Resources:
   AudioBucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketName: !Sub 'tts-phrasebook-audio-${AWS::AccountId}'
       CorsConfiguration:
         CorsRules:
           - AllowedMethods: [GET]
@@ -41,7 +42,7 @@ Resources:
   PhrasesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: tts-phrases
+      TableName: !Sub 'tts-phrases-${AWS::AccountId}'
       BillingMode: PROVISIONED
       ProvisionedThroughput:
         ReadCapacityUnits: 1
