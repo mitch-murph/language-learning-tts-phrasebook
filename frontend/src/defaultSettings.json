@@ -7,6 +7,10 @@
     "Vietnamese": {
       "normal": "Speak like a calm language tutor. Read the phrase clearly. Use a Southern Vietnamese accent.",
       "slow": "Speak like a calm language tutor. Slowly with a clear pause between each syllable. Use a Southern Vietnamese accent."
+    },
+    "Vietnamese (Northern)": {
+      "normal": "Speak like a calm language tutor. Read the phrase clearly. Use a Northern Vietnamese accent.",
+      "slow": "Speak like a calm language tutor. Slowly with a clear pause between each syllable. Use a Northern Vietnamese accent."
     }
   }
 }
