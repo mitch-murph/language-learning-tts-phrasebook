@@ -41,15 +41,13 @@ function fail(status: number, message: string): APIGatewayProxyResultV2 {
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   const { method, path } = event.requestContext.http;
-  const { requestId } = event.requestContext;
-  const tag = `[${requestId}]`;
 
   if (method === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
 
-  console.log(`${tag} ${method} ${path}`);
+  console.log("[handler] ${method} ${path}");
 
   if (!verifyToken(event.headers["x-app-token"], HMAC_SECRET)) {
-    console.warn(`${tag} auth failed`);
+    console.warn("[handler] auth failed");
     return fail(401, "Invalid or expired token");
   }
 
@@ -67,7 +65,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     return fail(404, "Not found");
   } catch (e) {
     if (e instanceof ValidationError) return fail(400, e.message);
-    console.error(`${tag} unhandled error:`, e);
+    console.error("[handler] unhandled error:", e);
     return fail(500, "Internal server error");
   }
 };
