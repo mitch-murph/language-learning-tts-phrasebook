@@ -10,6 +10,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -31,6 +34,11 @@ jobs:
           VITE_HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
           VITE_LAMBDA_URL: ${{ secrets.LAMBDA_URL }}
           VITE_AUDIO_BASE_URL: ${{ secrets.AUDIO_BASE_URL }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
