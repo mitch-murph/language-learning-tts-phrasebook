@@ -140,15 +140,20 @@ export default function LanguagePromptEditor({
               playing={playingPace === 'normal'}
               canHear={canHear && !playingPace}
             />
-            <PromptField
-              label="Slow"
-              value={slow}
-              onChange={handleSlowChange}
-              onHear={() => handleHear('slow')}
-              onStop={handleStop}
-              playing={playingPace === 'slow'}
-              canHear={canHear && !playingPace}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <PromptField
+                label="Slow"
+                value={slow}
+                onChange={handleSlowChange}
+                onHear={() => handleHear('slow')}
+                onStop={handleStop}
+                playing={playingPace === 'slow'}
+                canHear={canHear && !playingPace}
+              />
+              <Typography sx={{ fontSize: 11, opacity: 0.5, fontStyle: 'italic' }}>
+                These prompts are instructions sent to the TTS model on how to speak. Type a phrase above to test.
+              </Typography>
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {isOverride && (
@@ -167,12 +172,6 @@ export default function LanguagePromptEditor({
                 Save
               </Button>
             </Box>
-
-            {!canHear && (
-              <Typography sx={{ fontSize: 11, opacity: 0.5, fontStyle: 'italic' }}>
-                These prompts are instructions sent to the TTS model on how to speak. Type a phrase above to test.
-              </Typography>
-            )}
             {playError && (
               <Typography sx={{ fontSize: 11, color: t.accents.pop }}>{playError}</Typography>
             )}
