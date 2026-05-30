@@ -41,7 +41,7 @@ language-learning-tts-phrasebook/
 
 ## Key Design Decisions
 
-**Audio caching:** Every TTS response is cached in S3 keyed by `audio/{languageCode}/slow/{sha256(normalizedText)}.mp3`. Lambda checks S3 before calling TTS. Cache hits return a public S3 URL instantly with no TTS cost.
+**Always save:** Every POST creates a phrase — TTS is called, audio is uploaded to S3, and a DynamoDB record is written. There is no preview-without-saving mode. S3 keys are content-addressed (`audio/{languageCode}/{sha256(normalizedText)}.mp3`), so duplicate text in the same language reuses the same S3 object.
 
 **No API Gateway:** Lambda Function URL is used directly — it's free. API Gateway charges $3.50/million requests.
 
