@@ -50,16 +50,16 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
 
   async update(phraseId: string, fields: { transcription?: string; translation?: string }): Promise<Phrase> {
     const updatedAt = new Date().toISOString();
+    const setParts = ["updatedAt = :ua"];
+    const exprValues: Record<string, unknown> = { ":ua": updatedAt };
+    if (fields.transcription !== undefined) { setParts.push("transcription = :tc"); exprValues[":tc"] = fields.transcription; }
+    if (fields.translation !== undefined) { setParts.push("translation = :tr"); exprValues[":tr"] = fields.translation; }
     const result = await this.ddb.send(
       new UpdateCommand({
         TableName: this.tableName,
         Key: { userId: USER_ID, phraseId },
-        UpdateExpression: "SET transcription = :tc, translation = :tr, updatedAt = :ua",
-        ExpressionAttributeValues: {
-          ":tc": fields.transcription ?? null,
-          ":tr": fields.translation ?? null,
-          ":ua": updatedAt,
-        },
+        UpdateExpression: `SET ${setParts.join(", ")}`,
+        ExpressionAttributeValues: exprValues,
         ReturnValues: "ALL_NEW",
       })
     );
