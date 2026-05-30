@@ -1,10 +1,10 @@
 import type { IPhraseRepository } from "../repositories/phraseRepository";
 
-export class DeletePhraseUseCase {
-  constructor(private repo: IPhraseRepository) {}
+export type DeletePhraseFn = (phraseId: string) => Promise<{ success: true }>;
 
-  async execute(phraseId: string): Promise<{ success: true }> {
-    await this.repo.delete(phraseId);
+export function makeDeletePhrase(repo: IPhraseRepository): DeletePhraseFn {
+  return async (phraseId) => {
+    await repo.delete(phraseId);
     return { success: true };
-  }
+  };
 }

@@ -1,10 +1,8 @@
 import type { IPhraseRepository } from "../repositories/phraseRepository";
 import type { Phrase } from "../domain";
 
-export class ListPhrasesUseCase {
-  constructor(private repo: IPhraseRepository) {}
+export type ListPhrasesFn = () => Promise<{ phrases: Phrase[] }>;
 
-  async execute(): Promise<{ phrases: Phrase[] }> {
-    return { phrases: await this.repo.list() };
-  }
+export function makeListPhrases(repo: IPhraseRepository): ListPhrasesFn {
+  return async () => ({ phrases: await repo.list() });
 }

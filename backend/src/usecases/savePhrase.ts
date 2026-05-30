@@ -9,18 +9,15 @@ export interface SavePhraseInput {
   translation?: string;
 }
 
-export class SavePhraseUseCase {
-  constructor(
-    private audio: IAudioStore,
-    private repo: IPhraseRepository
-  ) {}
+export type SavePhraseFn = (input: SavePhraseInput) => Promise<{ phraseId: string; s3Key: string }>;
 
-  async execute(input: SavePhraseInput): Promise<{ phraseId: string; s3Key: string }> {
+export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): SavePhraseFn {
+  return async (input) => {
     console.log(`[save] uploading to s3: "${input.text}" (${input.languageCode})`);
-    const s3Key = await this.audio.upload(input.text, input.languageCode, input.audioBase64);
+    const s3Key = await audio.upload(input.text, input.languageCode, input.audioBase64);
 
     console.log("[save] writing to db:", s3Key);
-    const phrase = await this.repo.save({
+    const phrase = await repo.save({
       text: input.text,
       languageCode: input.languageCode,
       s3Key,
@@ -30,5 +27,5 @@ export class SavePhraseUseCase {
 
     console.log("[save] done:", phrase.phraseId);
     return { phraseId: phrase.phraseId, s3Key };
-  }
+  };
 }

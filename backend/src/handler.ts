@@ -1,24 +1,23 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { verifyToken } from "./utils/auth";
-import { PhrasesRoute, ValidationError } from "./routes/phrases";
+import { makePhrasesRoute, ValidationError } from "./routes/phrases";
 import { DynamoDbPhraseRepository } from "./repositories/phraseRepository";
 import { S3AudioStore } from "./services/audioStore";
-import { SavePhraseUseCase } from "./usecases/savePhrase";
-import { ListPhrasesUseCase } from "./usecases/listPhrases";
-import { DeletePhraseUseCase } from "./usecases/deletePhrase";
+import { makeSavePhrase } from "./usecases/savePhrase";
+import { makeListPhrases } from "./usecases/listPhrases";
+import { makeDeletePhrase } from "./usecases/deletePhrase";
 
 const HMAC_SECRET = process.env.HMAC_SECRET!;
 const TABLE_NAME = process.env.TABLE_NAME!;
 const AUDIO_BUCKET = process.env.AUDIO_BUCKET!;
 
-// Composition root — wired once at cold start
 const repo = new DynamoDbPhraseRepository(TABLE_NAME);
 const audio = new S3AudioStore(AUDIO_BUCKET);
 
-const phrases = new PhrasesRoute(
-  new SavePhraseUseCase(audio, repo),
-  new ListPhrasesUseCase(repo),
-  new DeletePhraseUseCase(repo)
+const phrases = makePhrasesRoute(
+  makeSavePhrase(audio, repo),
+  makeListPhrases(repo),
+  makeDeletePhrase(repo)
 );
 
 const CORS = {
