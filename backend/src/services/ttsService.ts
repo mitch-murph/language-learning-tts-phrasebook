@@ -11,7 +11,12 @@ export class HttpTtsService implements ITtsService {
   ): Promise<string> {
     const res = await fetch(ttsUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8",
+        "Origin": "https://www.gstatic.com",
+        "Referer": "https://www.gstatic.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0",
+      },
       body: JSON.stringify({
         input: { text, prompt },
         voice: { languageCode, name: "Charon", modelName: "gemini-3.1-flash-tts-preview" },
