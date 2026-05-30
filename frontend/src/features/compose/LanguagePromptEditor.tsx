@@ -22,11 +22,10 @@ interface Props {
   languageCode: string;
   testText: string;
   disabled?: boolean;
-  onDirtyChange: (dirty: boolean) => void;
 }
 
 export default function LanguagePromptEditor({
-  open, onToggle, languageName, languageCode, testText, disabled, onDirtyChange,
+  open, onToggle, languageName, languageCode, testText, disabled,
 }: Props) {
   const t = useTheme();
   const isComic = t.appName === 'comic';
@@ -43,40 +42,24 @@ export default function LanguagePromptEditor({
     setNormal(eff.normal);
     setSlow(eff.slow);
     setIsOverride(hasUserOverride(languageName));
-    onDirtyChange(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageName]);
 
   useEffect(() => () => { audioRef.current?.pause(); }, []);
 
   function getSaved() { return getEffectivePrompts(languageName); }
 
-  function computeDirty(n: string, s: string) {
-    const saved = getSaved();
-    return n !== saved.normal || s !== saved.slow;
-  }
-
-  function handleNormalChange(v: string) {
-    setNormal(v);
-    onDirtyChange(computeDirty(v, slow));
-  }
-
-  function handleSlowChange(v: string) {
-    setSlow(v);
-    onDirtyChange(computeDirty(normal, v));
-  }
+  function handleNormalChange(v: string) { setNormal(v); }
+  function handleSlowChange(v: string) { setSlow(v); }
 
   function handleSave() {
     setUserLangPrompts(languageName, { normal: normal.trim(), slow: slow.trim() });
     setIsOverride(true);
-    onDirtyChange(false);
   }
 
   function handleDiscard() {
     const saved = getSaved();
     setNormal(saved.normal);
     setSlow(saved.slow);
-    onDirtyChange(false);
   }
 
   function handleReset() {
@@ -85,7 +68,6 @@ export default function LanguagePromptEditor({
     const defaults = getEffectivePrompts(languageName);
     setNormal(defaults.normal);
     setSlow(defaults.slow);
-    onDirtyChange(false);
   }
 
   async function handleHear(pace: Pace) {
