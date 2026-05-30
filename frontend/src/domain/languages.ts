@@ -4,18 +4,12 @@ export interface Language {
   nonLatin: boolean;
 }
 
-const PALETTE = [
-  '#ffd23f', '#3a86ff', '#e8392b', '#ff6b35', '#06a77d',
-  '#1d3557', '#457b9d', '#fcbf49', '#d62828', '#2a9d8f',
-  '#8ac926', '#9b2226', '#005f73', '#ee9b00', '#f72585',
-  '#9d4edd', '#e63946',
-];
-
 export function colorForName(name: string): string {
   const key = name.toLowerCase();
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
-  return PALETTE[Math.abs(h) % PALETTE.length];
+  const hue = Math.abs(h) % 360;
+  return `hsl(${hue}, 75%, 48%)`;
 }
 
 export function normalizeLanguageName(raw: string): string {
