@@ -5,6 +5,7 @@ export interface Phrase {
   languageCode: string;
   s3Key: string;
   createdAt: string;
+  updatedAt?: string;
   transcription?: string;
   translation?: string;
 }

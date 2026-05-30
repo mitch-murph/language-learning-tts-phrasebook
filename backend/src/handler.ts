@@ -6,6 +6,7 @@ import { S3AudioStore } from "./services/audioStore";
 import { makeSavePhrase } from "./usecases/savePhrase";
 import { makeListPhrases } from "./usecases/listPhrases";
 import { makeDeletePhrase } from "./usecases/deletePhrase";
+import { makeUpdatePhrase } from "./usecases/updatePhrase";
 
 const HMAC_SECRET = process.env.HMAC_SECRET!;
 const TABLE_NAME = process.env.TABLE_NAME!;
@@ -17,13 +18,14 @@ const audio = new S3AudioStore(AUDIO_BUCKET);
 const phrases = makePhrasesRoute(
   makeSavePhrase(audio, repo),
   makeListPhrases(repo),
-  makeDeletePhrase(repo)
+  makeDeletePhrase(repo),
+  makeUpdatePhrase(repo)
 );
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "content-type,x-app-token",
-  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
 };
 
 function ok(body: unknown): APIGatewayProxyResultV2 {
@@ -55,9 +57,12 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     if (method === "POST" && path === "/phrases") {
       return ok(await phrases.handlePost(event.body ?? "{}"));
     }
-    const deleteMatch = path.match(/^\/phrases\/([^/]+)$/);
-    if (method === "DELETE" && deleteMatch) {
-      return ok(await phrases.handleDelete(deleteMatch[1]));
+    const phraseMatch = path.match(/^\/phrases\/([^/]+)$/);
+    if (method === "DELETE" && phraseMatch) {
+      return ok(await phrases.handleDelete(phraseMatch[1]));
+    }
+    if (method === "PUT" && phraseMatch) {
+      return ok(await phrases.handlePut(phraseMatch[1], event.body ?? "{}"));
     }
     return fail(404, "Not found");
   } catch (e) {
