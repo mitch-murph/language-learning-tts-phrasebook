@@ -26,7 +26,7 @@ components:
   schemas:
     Phrase:
       type: object
-      required: [phraseId, userId, text, languageCode, s3Key, createdAt]
+      required: [phraseId, userId, text, languageCode, languageName, nonLatin, s3Key, createdAt]
       properties:
         phraseId:
           type: string
@@ -40,7 +40,16 @@ components:
           example: "おはようございます"
         languageCode:
           type: string
+          description: BCP-47 code. Free-form — may be a user-entered code that the TTS does not support.
           example: "ja-JP"
+        languageName:
+          type: string
+          description: Human-readable language name; the grouping key in the UI.
+          example: "Japanese"
+        nonLatin:
+          type: boolean
+          description: True if the script is non-Latin and a romanization field should be shown.
+          example: true
         s3Key:
           type: string
           description: Content-addressed S3 key for the audio file.
@@ -62,7 +71,7 @@ components:
 
     SavePhraseRequest:
       type: object
-      required: [text, audioBase64]
+      required: [text, languageName, nonLatin, audioBase64]
       properties:
         text:
           type: string
@@ -70,9 +79,17 @@ components:
           example: "おはようございます"
         languageCode:
           type: string
-          description: BCP-47 language code. Defaults to `en-AU`.
+          description: BCP-47 language code. Defaults to `en-AU`. Free-form — may be a user-entered code that the TTS does not support.
           default: "en-AU"
           example: "ja-JP"
+        languageName:
+          type: string
+          description: Human-readable language name.
+          example: "Japanese"
+        nonLatin:
+          type: boolean
+          description: True if a romanization field should be shown for this language.
+          example: true
         audioBase64:
           type: string
           format: byte
@@ -150,14 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [phraseId, s3Key]
-                properties:
-                  phraseId:
-                    type: string
-                    format: uuid
-                  s3Key:
-                    type: string
+                $ref: "#/components/schemas/Phrase"
         "400":
           description: Validation error (missing required fields or invalid JSON)
           content:

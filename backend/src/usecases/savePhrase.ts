@@ -1,15 +1,18 @@
 import type { IAudioStore } from "../services/audioStore";
 import type { IPhraseRepository } from "../repositories/phraseRepository";
+import type { Phrase } from "../domain";
 
 export interface SavePhraseInput {
   text: string;
   languageCode: string;
+  languageName: string;
+  nonLatin: boolean;
   audioBase64: string;
   transcription?: string;
   translation?: string;
 }
 
-export type SavePhraseFn = (input: SavePhraseInput) => Promise<{ phraseId: string; s3Key: string }>;
+export type SavePhraseFn = (input: SavePhraseInput) => Promise<Phrase>;
 
 export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): SavePhraseFn {
   return async (input) => {
@@ -20,12 +23,14 @@ export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): Sav
     const phrase = await repo.save({
       text: input.text,
       languageCode: input.languageCode,
+      languageName: input.languageName,
+      nonLatin: input.nonLatin,
       s3Key,
       transcription: input.transcription,
       translation: input.translation,
     });
 
     console.log("[save] done:", phrase.phraseId);
-    return { phraseId: phrase.phraseId, s3Key };
+    return phrase;
   };
 }

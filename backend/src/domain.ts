@@ -3,6 +3,8 @@ export interface Phrase {
   userId: string;
   text: string;
   languageCode: string;
+  languageName: string;
+  nonLatin: boolean;
   s3Key: string;
   createdAt: string;
   updatedAt?: string;

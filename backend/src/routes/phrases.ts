@@ -10,10 +10,19 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
     async handlePost(rawBody: string) {
       let body: unknown;
       try { body = JSON.parse(rawBody); } catch { throw new ValidationError("Invalid JSON"); }
-      const { text, languageCode = "en-AU", audioBase64, transcription, translation } = body as Record<string, string>;
+      const b = body as Record<string, unknown>;
+      const text = b.text as string | undefined;
+      const languageCode = (b.languageCode as string | undefined) ?? "en-AU";
+      const languageName = b.languageName as string | undefined;
+      const nonLatin = b.nonLatin;
+      const audioBase64 = b.audioBase64 as string | undefined;
+      const transcription = b.transcription as string | undefined;
+      const translation = b.translation as string | undefined;
       if (!text) throw new ValidationError("Missing text");
+      if (!languageName) throw new ValidationError("Missing languageName");
+      if (typeof nonLatin !== "boolean") throw new ValidationError("Missing nonLatin");
       if (!audioBase64) throw new ValidationError("Missing audioBase64");
-      return save({ text, languageCode, audioBase64, transcription, translation });
+      return save({ text, languageCode, languageName, nonLatin, audioBase64, transcription, translation });
     },
     async handleGet() {
       return list();
