@@ -6,6 +6,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
 import { useTheme } from '@mui/material/styles';
 import {
   getEffectivePrompts,
@@ -70,6 +71,11 @@ export default function LanguagePromptEditor({
     setSlow(defaults.slow);
   }
 
+  function handleStop() {
+    audioRef.current?.pause();
+    setPlayingPace(null);
+  }
+
   async function handleHear(pace: Pace) {
     const trimmed = testText.trim();
     if (!trimmed || playingPace) return;
@@ -130,6 +136,7 @@ export default function LanguagePromptEditor({
               value={normal}
               onChange={handleNormalChange}
               onHear={() => handleHear('normal')}
+              onStop={handleStop}
               playing={playingPace === 'normal'}
               canHear={canHear && !playingPace}
             />
@@ -138,6 +145,7 @@ export default function LanguagePromptEditor({
               value={slow}
               onChange={handleSlowChange}
               onHear={() => handleHear('slow')}
+              onStop={handleStop}
               playing={playingPace === 'slow'}
               canHear={canHear && !playingPace}
             />
@@ -175,11 +183,12 @@ export default function LanguagePromptEditor({
   );
 }
 
-function PromptField({ label, value, onChange, onHear, playing, canHear }: {
+function PromptField({ label, value, onChange, onHear, onStop, playing, canHear }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   onHear: () => void;
+  onStop: () => void;
   playing: boolean;
   canHear: boolean;
 }) {
@@ -198,12 +207,12 @@ function PromptField({ label, value, onChange, onHear, playing, canHear }: {
       <Button
         size="small"
         variant="outlined"
-        onClick={onHear}
-        disabled={!canHear}
-        title="Test this draft prompt"
+        onClick={playing ? onStop : onHear}
+        disabled={!playing && !canHear}
+        title={playing ? 'Stop' : 'Test this draft prompt'}
         sx={{ mt: '4px', minWidth: 52, px: 1, flexShrink: 0 }}
       >
-        {playing ? '…' : <PlayArrowIcon fontSize="small" />}
+        {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
       </Button>
     </Box>
   );

@@ -170,6 +170,7 @@ export default function Composer({ phrases, onSaved }: Props) {
 
       {lang && (
         <LanguagePromptEditor
+          key={lang.name}
           open={promptOpen}
           onToggle={() => setPromptOpen(o => !o)}
           languageName={lang.name}
