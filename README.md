@@ -34,61 +34,36 @@ A personal web app for language learning. Type a phrase, hear it spoken at a slo
 
 ## Architecture
 
-```
-              ┌─────────────────────┐
-              │  GitHub repository  │
-              │      (main)         │
-              └──────────┬──────────┘
-                         │ git push
-              ┌──────────┴──────────┐
-              ▼                     ▼
-     ┌────────────────┐    ┌────────────────┐
-     │ deploy-frontend│    │ deploy-backend │
-     │  vite build    │    │  sam deploy    │
-     │  → gh-pages    │    │  uses AWS creds│
-     └───────┬────────┘    └───────┬────────┘
-             │ publish             │ assumes IAM deploy user
-             ▼                     ▼
-     ┌──────────────┐      ┌──────────────────┐
-     │ GitHub Pages │      │ IAM deploy user  │
-     │ static HTTPS │      │ Lambda / IAM /   │
-     └──────┬───────┘      │ S3 / DynamoDB /  │
-            │              │ CloudFormation   │
-            │ user loads   └─────────┬────────┘
-            ▼                        │ CloudFormation
-     ┌──────────────────────────┐    │ provisions resources
-     │  Browser (React + MUI)   │    ▼
-     │                          │
-     │ • HMAC-TOTP token gen    │── POST audio ──► ┌──────────────┐
-     │ • calls Google TTS       │                  │  Google TTS  │
-     │   directly (proxy URL    │◄── base64 MP3 ──│  proxy       │
-     │   in localStorage)       │                  │ cxl-services │
-     │ • plays + caches audio   │                  └──────────────┘
-     │ • saves prefs in LS      │
-     └──┬──────────────┬────────┘
-        │              │ replay (direct GET .mp3, no Lambda)
-        │ POST /phrases│
-        │ + audioBase64│
-        │ GET /phrases │
-        │ PUT /phrases │
-        │ DEL /phrases │
-        ▼              ▼
-     ┌──────────────┐ ┌─────────────────────────┐
-     │   Lambda     │ │  S3 audio bucket        │
-     │ Function URL │ │  public-read + CORS     │
-     │ Node 20      │ │  audio/<lang>/<sha>.mp3 │
-     │ Concurrency=2│ └─────────────────────────┘
-     └──┬────┬──────┘            ▲
-        │    │ upload audio      │
-        │    └───────────────────┘
-        │ write/read records
-        ▼
-     ┌──────────────────────┐
-     │  DynamoDB            │
-     │  tts-phrases         │
-     │  PK: userId="default"│
-     │  SK: phraseId (uuid) │
-     └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph cicd["CI/CD — GitHub Actions"]
+        GH["GitHub repo (main)"]
+        FE_WF["deploy-frontend<br/>vite build → gh-pages"]
+        BE_WF["deploy-backend<br/>sam deploy"]
+        GH -->|push| FE_WF
+        GH -->|push| BE_WF
+    end
+
+    FE_WF -->|publish| Pages["GitHub Pages<br/>static HTTPS"]
+    BE_WF -->|CloudFormation provisions| Lambda
+
+    subgraph aws["AWS"]
+        Lambda["Lambda Function URL<br/>Node.js 20 · concurrency=2"]
+        DDB[("DynamoDB<br/>tts-phrases")]
+        S3[("S3 audio bucket<br/>public-read")]
+        Lambda -->|write / read records| DDB
+        Lambda -->|upload audio| S3
+    end
+
+    Pages -->|user loads| App
+
+    subgraph browser["Browser"]
+        App["React + MUI<br/>HMAC-TOTP · audio cache · localStorage prefs"]
+    end
+
+    App -->|"POST text → base64 MP3"| TTS["Google TTS proxy<br/>cxl-services.appspot.com"]
+    App -->|"CRUD /phrases + audioBase64<br/>(x-app-token header)"| Lambda
+    App -->|"GET .mp3 — direct replay, no Lambda"| S3
 ```
 
 The browser calls the Google TTS proxy directly using a short-lived OAuth2 token from the Settings modal. Lambda never sees the token and never makes a TTS call — it just persists the audio bytes the browser hands it. For replay, the frontend constructs the S3 URL from the stored `s3Key` and plays it without invoking Lambda at all.
