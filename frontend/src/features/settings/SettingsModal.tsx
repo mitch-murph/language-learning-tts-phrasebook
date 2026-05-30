@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import { useTheme } from '@mui/material/styles';
 import { exportSettings, importSettings } from '../../api/settings';
+import TtsUrlField from './TtsUrlField';
 
 interface Props {
   open: boolean;
@@ -84,16 +85,7 @@ export default function SettingsModal({ open, onClose }: Props) {
         </DialogContentText>
 
         <Stack spacing={3}>
-          <TextField
-            label="TTS Proxy URL (including ?token=…)"
-            value={ttsUrl}
-            onChange={e => setTtsUrl(e.target.value)}
-            placeholder="https://cxl-services.appspot.com/proxy?url=…&token=…"
-            spellCheck={false}
-            fullWidth
-            helperText="Paste the full proxy URL. The OAuth2 token is short-lived, so update it here when it expires."
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
+          <TtsUrlField value={ttsUrl} onChange={setTtsUrl} />
 
           <Divider />
 

@@ -11,6 +11,7 @@ import LanguagePromptEditor from './LanguagePromptEditor';
 import ModeSelector from './ModeSelector';
 import PhraseBubble from './PhraseBubble';
 import AddLanguageModal from './AddLanguageModal';
+import TtsSetupModal from '../settings/TtsSetupModal';
 import {
   languagesFromPhrases,
   mergeLanguages,
@@ -43,8 +44,10 @@ export default function Composer({ phrases, onSaved }: Props) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [savedStamp, setSavedStamp] = useState(false);
+  const [showTtsSetup, setShowTtsSetup] = useState(false);
   const playRef = useRef<PlayController | null>(null);
   const stampTimerRef = useRef<number | null>(null);
+  const pendingActionRef = useRef<'play' | 'save' | null>(null);
 
   const languages = useMemo(
     () => mergeLanguages(languagesFromPhrases(phrases), sessionAdded),
@@ -85,7 +88,14 @@ export default function Composer({ phrases, onSaved }: Props) {
     });
     playRef.current = ctl;
     ctl.done
-      .catch(e => setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) }))
+      .catch(e => {
+        if (e instanceof TtsError && e.noUrl) {
+          pendingActionRef.current = 'play';
+          setShowTtsSetup(true);
+        } else {
+          setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });
+        }
+      })
       .finally(() => {
         if (playRef.current === ctl) {
           playRef.current = null;
@@ -125,7 +135,10 @@ export default function Composer({ phrases, onSaved }: Props) {
       }, 1500);
       onSaved(phrase);
     } catch (e) {
-      if (e instanceof TtsError && e.unsupportedLanguage && ttsCode !== FALLBACK_CODE) {
+      if (e instanceof TtsError && e.noUrl) {
+        pendingActionRef.current = 'save';
+        setShowTtsSetup(true);
+      } else if (e instanceof TtsError && e.unsupportedLanguage && ttsCode !== FALLBACK_CODE) {
         setStatus({
           kind: 'retry',
           msg: `${e.message} You can retry using ${FALLBACK_CODE} and the TTS will still attempt the phrase.`,
@@ -147,6 +160,13 @@ export default function Composer({ phrases, onSaved }: Props) {
   function handleRetryFallback() {
     setStatus(null);
     performSave(FALLBACK_CODE);
+  }
+
+  function handleTtsSetupSaved() {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (action === 'play') handlePlay();
+    else if (action === 'save') handleSave();
   }
 
   function handleAddLanguage(newLang: Language) {
@@ -270,6 +290,12 @@ export default function Composer({ phrases, onSaved }: Props) {
           onAdd={handleAddLanguage}
         />
       )}
+
+      <TtsSetupModal
+        open={showTtsSetup}
+        onClose={() => { setShowTtsSetup(false); pendingActionRef.current = null; }}
+        onSaved={handleTtsSetupSaved}
+      />
 
     </Box>
   );

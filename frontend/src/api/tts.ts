@@ -3,7 +3,11 @@ import { getPrompt } from './settings';
 export type Pace = 'slow' | 'normal';
 
 export class TtsError extends Error {
-  constructor(message: string, public unsupportedLanguage: boolean) {
+  constructor(
+    message: string,
+    public unsupportedLanguage: boolean,
+    public noUrl = false,
+  ) {
     super(message);
     this.name = 'TtsError';
   }
@@ -17,7 +21,7 @@ export async function callTts(
   overridePrompt?: string,
 ): Promise<string> {
   const ttsUrl = localStorage.getItem('ttsUrl') ?? '';
-  if (!ttsUrl) throw new TtsError('TTS URL not set. Open Settings and paste the proxy URL.', false);
+  if (!ttsUrl) throw new TtsError('TTS URL not set.', false, true);
   const res = await fetch(ttsUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
