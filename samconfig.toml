@@ -1,0 +1,12 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "tts-phrasebook"
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+# Set your AWS region here, e.g. "ap-southeast-2" or "us-east-1"
+region = "ap-southeast-2"

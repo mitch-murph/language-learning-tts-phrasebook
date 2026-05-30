@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TTS Phrasebook — Lambda + S3 + DynamoDB
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 256
+
+Parameters:
+  HmacSecret:
+    Type: String
+    NoEcho: true
+    Description: HMAC-SHA256 shared secret for TOTP token verification
+
+Resources:
+
+  AudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [GET]
+            AllowedOrigins: ['*']
+            AllowedHeaders: ['*']
+            MaxAge: 3600
+
+  AudioBucketPublicPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AudioBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub '${AudioBucket.Arn}/audio/*'
+
+  PhrasesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tts-phrases
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: phraseId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: phraseId
+          KeyType: RANGE
+
+  TtsHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.handler
+      CodeUri: backend/dist/
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          HMAC_SECRET: !Ref HmacSecret
+          TABLE_NAME: !Ref PhrasesTable
+          AUDIO_BUCKET: !Ref AudioBucket
+      FunctionUrlConfig:
+        AuthType: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PhrasesTable
+        - S3WritePolicy:
+            BucketName: !Ref AudioBucket
+
+Outputs:
+  LambdaFunctionUrl:
+    Description: Lambda Function URL — add as LAMBDA_URL in GitHub Secrets
+    Value: !GetAtt TtsHandlerUrl.FunctionUrl
+
+  AudioBucketName:
+    Description: S3 audio bucket name
+    Value: !Ref AudioBucket
+
+  AudioBaseUrl:
+    Description: S3 audio base URL — add as VITE_AUDIO_BASE_URL in GitHub Secrets
+    Value: !Sub 'https://${AudioBucket}.s3.amazonaws.com'
