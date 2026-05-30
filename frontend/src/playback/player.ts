@@ -1,6 +1,7 @@
 import { callTts, type Pace } from '../api/tts';
+import { getPrompt } from '../api/settings';
 
-export type Mode = 'slow' | 'normal' | 'triple' | 'drill';
+export type Mode = 'slow' | 'normal' | 'triple';
 
 interface SequenceStep { pace: Pace; gapMs: number; }
 
@@ -12,7 +13,6 @@ const MODE_SEQUENCE: Record<Mode, SequenceStep[]> = {
     { pace: 'slow',   gapMs: 600 },
     { pace: 'normal', gapMs: 0 },
   ],
-  drill:  [{ pace: 'slow', gapMs: 1500 }],
 };
 
 const audioCache = new Map<string, string>();
@@ -27,11 +27,12 @@ function decodeToBlobUrl(base64: string): string {
   return url;
 }
 
-async function fetchAudio(text: string, lang: string, pace: Pace): Promise<string> {
-  const key = `${lang}|${pace}|${text}`;
+async function fetchAudio(text: string, lang: string, langName: string, pace: Pace): Promise<string> {
+  const prompt = getPrompt(pace, langName);
+  const key = `${lang}|${pace}|${prompt}|${text}`;
   const hit = audioCache.get(key);
   if (hit) return hit;
-  const audio = await callTts(text, lang, pace);
+  const audio = await callTts(text, lang, pace, langName);
   audioCache.set(key, audio);
   return audio;
 }
@@ -71,16 +72,17 @@ export interface PlayStage { index: number; total: number; pace: Pace; }
 export function playPhrase(opts: {
   text: string;
   lang: string;
+  langName: string;
   mode: Mode;
   onStage?: (stage: PlayStage) => void;
 }): PlayController {
-  const { text, lang, mode, onStage } = opts;
+  const { text, lang, langName, mode, onStage } = opts;
   const controller = new AbortController();
   let currentAudio: HTMLAudioElement | null = null;
 
   const done = (async () => {
     const sequence = MODE_SEQUENCE[mode];
-    const loop = mode === 'drill';
+    const loop = false;
     let iteration = 0;
 
     while (true) {
@@ -93,7 +95,7 @@ export function playPhrase(opts: {
           pace: step.pace,
         });
 
-        const base64 = await fetchAudio(text, lang, step.pace);
+        const base64 = await fetchAudio(text, lang, langName, step.pace);
         if (controller.signal.aborted) return;
         const url = decodeToBlobUrl(base64);
         const { audio, ended } = playUrl(url);

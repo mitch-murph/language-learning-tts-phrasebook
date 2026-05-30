@@ -7,7 +7,6 @@ const MODES: { value: Mode; label: string }[] = [
   { value: 'triple', label: 'Triple' },
   { value: 'slow',   label: 'Slow' },
   { value: 'normal', label: 'Normal' },
-  { value: 'drill',  label: 'Drill' },
 ];
 
 interface Props {

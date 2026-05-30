@@ -8,7 +8,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
 import { useTheme } from '@mui/material/styles';
+import { exportSettings, importSettings } from '../../api/settings';
 
 interface Props {
   open: boolean;
@@ -20,11 +22,31 @@ export default function SettingsModal({ open, onClose }: Props) {
   const [ttsUrl, setTtsUrl] = useState(() => localStorage.getItem('ttsUrl') ?? '');
   const [saved, setSaved] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
+  const [importText, setImportText] = useState('');
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   function handleSave() {
     localStorage.setItem('ttsUrl', ttsUrl.trim());
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(exportSettings()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  function handleImport() {
+    try {
+      importSettings(importText.trim());
+      setImportStatus('Imported and merged.');
+      setImportText('');
+    } catch {
+      setImportStatus('Invalid JSON, could not import.');
+    }
   }
 
   async function handleTestTts() {
@@ -47,7 +69,7 @@ export default function SettingsModal({ open, onClose }: Props) {
       }
       const { audioContent } = await res.json();
       new Audio(`data:audio/mp3;base64,${audioContent}`).play();
-      setTestStatus('Success — you should hear audio.');
+      setTestStatus('Success. You should hear audio.');
     } catch (e) {
       setTestStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -69,9 +91,43 @@ export default function SettingsModal({ open, onClose }: Props) {
             placeholder="https://cxl-services.appspot.com/proxy?url=…&token=…"
             spellCheck={false}
             fullWidth
-            helperText="Paste the full proxy URL. The OAuth2 token is short-lived — update it here when it expires."
+            helperText="Paste the full proxy URL. The OAuth2 token is short-lived, so update it here when it expires."
             slotProps={{ inputLabel: { shrink: true } }}
           />
+
+          <Divider />
+
+          <Typography variant="overline">Language prompt settings</Typography>
+
+          <Button variant="outlined" size="small" onClick={handleCopy} sx={{ alignSelf: 'flex-start' }}>
+            {copied ? 'Copied!' : 'Copy settings to clipboard'}
+          </Button>
+
+          <TextField
+            label="Import settings (paste JSON)"
+            value={importText}
+            onChange={e => { setImportText(e.target.value); setImportStatus(null); }}
+            multiline
+            minRows={3}
+            fullWidth
+            spellCheck={false}
+            placeholder='{"languagePrompts": {"Vietnamese": {"slow": "...", "normal": "..."}}}'
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleImport}
+            disabled={!importText.trim()}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Import &amp; merge
+          </Button>
+          {importStatus && (
+            <Typography sx={{ fontSize: 12, fontStyle: t.appName === 'ink' ? 'italic' : 'normal' }}>
+              {importStatus}
+            </Typography>
+          )}
         </Stack>
 
         {testStatus && (

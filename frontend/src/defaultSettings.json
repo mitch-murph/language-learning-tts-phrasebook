@@ -1,0 +1,12 @@
+{
+  "languagePrompts": {
+    "__default__": {
+      "normal": "Speak like a calm language tutor. Read the phrase slowly and clearly.",
+      "slow": "Speak like a calm language tutor. Very slowly with a clear pause between each syllable."
+    },
+    "Vietnamese": {
+      "normal": "Speak like a calm language tutor. Read the phrase slowly and clearly. Use a Southern Vietnamese accent.",
+      "slow": "Speak like a calm language tutor. Very slowly with a clear pause between each syllable. Use a Southern Vietnamese accent."
+    }
+  }
+}

@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import LanguagePicker from './LanguagePicker';
+import LanguagePromptEditor from './LanguagePromptEditor';
 import ModeSelector from './ModeSelector';
 import PhraseBubble from './PhraseBubble';
 import AddLanguageModal from './AddLanguageModal';
@@ -40,6 +41,8 @@ export default function Composer({ phrases, onSaved }: Props) {
   const [playing, setPlaying] = useState(false);
   const [stageLabel, setStageLabel] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [hasDraftChanges, setHasDraftChanges] = useState(false);
   const [savedStamp, setSavedStamp] = useState(false);
   const playRef = useRef<PlayController | null>(null);
   const stampTimerRef = useRef<number | null>(null);
@@ -58,6 +61,10 @@ export default function Composer({ phrases, onSaved }: Props) {
     if (!lang && languages.length > 0) setLang(languages[0]);
   }, [languages, lang]);
 
+  useEffect(() => {
+    setHasDraftChanges(false);
+  }, [lang?.name]);
+
   const busy = saving || playing;
 
   function stopPlayback() {
@@ -74,10 +81,9 @@ export default function Composer({ phrases, onSaved }: Props) {
     setStatus(null);
     setPlaying(true);
     const ctl = playPhrase({
-      text: trimmed, lang: lang.code, mode,
+      text: trimmed, lang: lang.code, langName: lang.name, mode,
       onStage: ({ index, total }) => {
         if (mode === 'triple') setStageLabel(`${index}/${total}`);
-        else if (mode === 'drill') setStageLabel(`loop ${index}`);
         else setStageLabel('');
       },
     });
@@ -98,7 +104,7 @@ export default function Composer({ phrases, onSaved }: Props) {
     if (!trimmed || !lang) return;
     setSaving(true);
     try {
-      const audioBase64 = await callTts(trimmed, ttsCode, 'slow');
+      const audioBase64 = await callTts(trimmed, ttsCode, 'slow', lang?.name ?? '');
       const phrase = await savePhrase({
         text: trimmed,
         languageCode: lang.code,
@@ -122,7 +128,7 @@ export default function Composer({ phrases, onSaved }: Props) {
       if (e instanceof TtsError && e.unsupportedLanguage && ttsCode !== FALLBACK_CODE) {
         setStatus({
           kind: 'retry',
-          msg: `${e.message} You can retry using ${FALLBACK_CODE} — the TTS will still attempt the phrase.`,
+          msg: `${e.message} You can retry using ${FALLBACK_CODE} and the TTS will still attempt the phrase.`,
         });
       } else {
         setStatus({ kind: 'error', msg: e instanceof Error ? e.message : String(e) });
@@ -166,6 +172,18 @@ export default function Composer({ phrases, onSaved }: Props) {
         disabled={busy}
       />
 
+      {lang && (
+        <LanguagePromptEditor
+          open={promptOpen}
+          onToggle={() => setPromptOpen(o => !o)}
+          languageName={lang.name}
+          languageCode={lang.code}
+          testText={text}
+          disabled={busy}
+          onDirtyChange={setHasDraftChanges}
+        />
+      )}
+
       <PhraseBubble
         text={text} onTextChange={setText}
         transcription={transcription} onTranscriptionChange={setTranscription}
@@ -207,6 +225,13 @@ export default function Composer({ phrases, onSaved }: Props) {
             } : undefined}
           >
             {playing ? 'Stop' : 'Hear it'}
+            {hasDraftChanges && !playing && (
+              <Box component="span" title="Unsaved prompt changes" sx={{
+                ml: 0.75, width: 6, height: 6, borderRadius: '50%',
+                backgroundColor: t.palette.warning.main,
+                display: 'inline-block', verticalAlign: 'middle', flexShrink: 0,
+              }} />
+            )}
             {stageLabel && (
               <Box component="span" sx={{
                 ml: 1, fontSize: isComic ? 10 : 12,
@@ -252,6 +277,7 @@ export default function Composer({ phrases, onSaved }: Props) {
           onAdd={handleAddLanguage}
         />
       )}
+
     </Box>
   );
 }

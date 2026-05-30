@@ -30,7 +30,7 @@ export default function AddLanguageModal({ existing, onClose, onAdd }: Props) {
     const cleanName = normalizeLanguageName(name);
     if (!cleanName) { setError('Name is required.'); return; }
     const dupe = existing.some(l => l.name.toLowerCase() === cleanName.toLowerCase());
-    if (dupe) { setError(`"${cleanName}" is already in the list — pick it from the pills.`); return; }
+    if (dupe) { setError(`"${cleanName}" is already in the list. Pick it from the pills.`); return; }
     onAdd({
       name: cleanName,
       code: code.trim() || 'en-US',
@@ -74,7 +74,7 @@ export default function AddLanguageModal({ existing, onClose, onAdd }: Props) {
             control={
               <Checkbox checked={nonLatin} onChange={e => setNonLatin(e.target.checked)} />
             }
-            label="Non-Latin script — show romanization field"
+            label="Non-Latin script (show romanization field)"
           />
         </Stack>
 
