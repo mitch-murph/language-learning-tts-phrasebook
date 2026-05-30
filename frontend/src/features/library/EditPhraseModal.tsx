@@ -17,6 +17,7 @@ interface Props {
   onSaved: (updated: Phrase) => void;
 }
 
+
 export default function EditPhraseModal({ phrase, onClose, onSaved }: Props) {
   const t = useTheme();
   const isComic = t.appName === 'comic';
