@@ -1,6 +1,9 @@
 const SECRET = import.meta.env.VITE_HMAC_SECRET ?? '';
 
 export async function generateToken(): Promise<string> {
+  if (!crypto?.subtle) {
+    throw new Error('Web Crypto unavailable — the app must be served over HTTPS. Run the dev server with `npm run dev` and connect via the https:// address shown in the terminal.');
+  }
   const window = Math.floor(Date.now() / 30000);
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
