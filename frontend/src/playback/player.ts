@@ -37,14 +37,25 @@ async function fetchAudio(text: string, lang: string, langName: string, pace: Pa
   return audio;
 }
 
-function playUrl(url: string): { audio: HTMLAudioElement; ended: Promise<void> } {
-  const audio = new Audio(url);
-  const ended = new Promise<void>((resolve, reject) => {
-    audio.addEventListener('ended', () => resolve(), { once: true });
-    audio.addEventListener('error', () => reject(new Error('audio playback failed')), { once: true });
+// Reuses a single HTMLAudioElement across steps so iOS doesn't lose the user-gesture
+// unlock between plays. Creating a new Audio() each time breaks drill mode on Safari/iOS.
+function playOnEl(audio: HTMLAudioElement, url: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const onEnded = () => { audio.removeEventListener('error', onError); resolve(); };
+    const onError = () => { audio.removeEventListener('ended', onEnded); reject(new Error('audio playback failed')); };
+    audio.addEventListener('ended', onEnded, { once: true });
+    audio.addEventListener('error', onError, { once: true });
+    audio.src = url;
+    audio.load();
+    audio.play().catch(() => { /* surfaced via error event */ });
   });
-  audio.play().catch(() => { /* surfaced via error event */ });
-  return { audio, ended };
+}
+
+function abortRace(signal: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    if (signal.aborted) { reject(new DOMException('aborted', 'AbortError')); return; }
+    signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+  });
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -78,50 +89,24 @@ export function playPhrase(opts: {
 }): PlayController {
   const { text, lang, langName, mode, onStage } = opts;
   const controller = new AbortController();
-  let currentAudio: HTMLAudioElement | null = null;
+  const audio = new Audio();
 
   const done = (async () => {
     const sequence = MODE_SEQUENCE[mode];
-    const loop = false;
-    let iteration = 0;
+    for (let i = 0; i < sequence.length; i++) {
+      if (controller.signal.aborted) return;
+      const step = sequence[i];
+      onStage?.({ index: i + 1, total: sequence.length, pace: step.pace });
 
-    while (true) {
-      for (let i = 0; i < sequence.length; i++) {
-        if (controller.signal.aborted) return;
-        const step = sequence[i];
-        onStage?.({
-          index: loop ? iteration + 1 : i + 1,
-          total: loop ? 0 : sequence.length,
-          pace: step.pace,
-        });
+      const base64 = await fetchAudio(text, lang, langName, step.pace);
+      if (controller.signal.aborted) return;
 
-        const base64 = await fetchAudio(text, lang, langName, step.pace);
-        if (controller.signal.aborted) return;
-        const url = decodeToBlobUrl(base64);
-        const { audio, ended } = playUrl(url);
-        currentAudio = audio;
-        try {
-          await Promise.race([
-            ended,
-            new Promise<void>((_, reject) => {
-              controller.signal.addEventListener(
-                'abort',
-                () => reject(new DOMException('aborted', 'AbortError')),
-                { once: true },
-              );
-            }),
-          ]);
-        } finally {
-          currentAudio = null;
-        }
+      await Promise.race([playOnEl(audio, decodeToBlobUrl(base64)), abortRace(controller.signal)]);
+      if (controller.signal.aborted) return;
 
-        if (controller.signal.aborted) return;
-        if (step.gapMs > 0 && (loop || i < sequence.length - 1)) {
-          try { await sleep(step.gapMs, controller.signal); } catch { return; }
-        }
+      if (step.gapMs > 0 && i < sequence.length - 1) {
+        await sleep(step.gapMs, controller.signal);
       }
-      if (!loop) break;
-      iteration++;
     }
   })().catch(err => {
     if (err?.name !== 'AbortError') throw err;
@@ -131,10 +116,8 @@ export function playPhrase(opts: {
     done,
     stop: () => {
       controller.abort();
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-      }
+      audio.pause();
+      audio.currentTime = 0;
     },
   };
 }
@@ -159,8 +142,7 @@ export function playPhraseFromUrls(opts: {
 }): PlayController {
   const { normalUrl, slowUrl, mode, onStage } = opts;
   const controller = new AbortController();
-  let currentAudio: HTMLAudioElement | null = null;
-
+  const audio = new Audio();
   const sequence = URL_MODE_SEQUENCE[mode];
 
   const done = (async () => {
@@ -168,29 +150,13 @@ export function playPhraseFromUrls(opts: {
       if (controller.signal.aborted) return;
       const step = sequence[i];
       const url = step.urlKey === 'normal' ? normalUrl : slowUrl;
-
       onStage?.({ index: i + 1, total: sequence.length, pace: step.urlKey });
 
-      const { audio, ended } = playUrl(url);
-      currentAudio = audio;
-      try {
-        await Promise.race([
-          ended,
-          new Promise<void>((_, reject) => {
-            controller.signal.addEventListener(
-              'abort',
-              () => reject(new DOMException('aborted', 'AbortError')),
-              { once: true },
-            );
-          }),
-        ]);
-      } finally {
-        currentAudio = null;
-      }
-
+      await Promise.race([playOnEl(audio, url), abortRace(controller.signal)]);
       if (controller.signal.aborted) return;
+
       if (step.gapMs > 0 && i < sequence.length - 1) {
-        try { await sleep(step.gapMs, controller.signal); } catch { return; }
+        await sleep(step.gapMs, controller.signal);
       }
     }
   })().catch(err => {
@@ -201,10 +167,8 @@ export function playPhraseFromUrls(opts: {
     done,
     stop: () => {
       controller.abort();
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-      }
+      audio.pause();
+      audio.currentTime = 0;
     },
   };
 }
