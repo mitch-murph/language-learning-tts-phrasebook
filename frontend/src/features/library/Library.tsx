@@ -9,6 +9,9 @@ import PhraseRow from './PhraseRow';
 import LanguageGroup from './LanguageGroup';
 import EditPhraseModal from './EditPhraseModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
+import QuizSetupModal from './QuizSetupModal';
+import QuizModal from './QuizModal';
+import ExportModal from './ExportModal';
 
 function groupByLanguageName(phrases: Phrase[]): [string, Phrase[]][] {
   const groups = new Map<string, { name: string; items: Phrase[] }>();
@@ -39,6 +42,10 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
   const [stageLabel, setStageLabel] = useState('');
   const [editing, setEditing] = useState<Phrase | null>(null);
   const [deletingPhrase, setDeletingPhrase] = useState<Phrase | null>(null);
+  const [quizSetupOpen, setQuizSetupOpen] = useState(false);
+  const [quizPhrases, setQuizPhrases] = useState<Phrase[] | null>(null);
+  const [exportSetupOpen, setExportSetupOpen] = useState(false);
+  const [exportPhrases, setExportPhrases] = useState<Phrase[] | null>(null);
   const playRef = useRef<PlayController | null>(null);
 
   useEffect(() => () => { playRef.current?.stop(); }, []);
@@ -83,7 +90,15 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
           : { pb: '6px', borderBottom: `1px solid ${t.palette.text.primary}` }),
       }}>
         <Typography variant="h2">Library</Typography>
-        <CountBadge count={phrases.length} loading={loading} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isComic ? '8px' : '10px' }}>
+          {phrases.length > 0 && (
+            <>
+              <QuizButton label="Export" onClick={() => setExportSetupOpen(true)} isComic={isComic} />
+              <QuizButton label="Quiz" onClick={() => setQuizSetupOpen(true)} isComic={isComic} />
+            </>
+          )}
+          <CountBadge count={phrases.length} loading={loading} />
+        </Box>
       </Box>
 
       <Box sx={{ mb: isComic ? '10px' : '14px' }}>
@@ -147,6 +162,68 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
           }}
         />
       )}
+
+      {quizSetupOpen && (
+        <QuizSetupModal
+          phrases={phrases}
+          onClose={() => setQuizSetupOpen(false)}
+          onStart={selected => {
+            setQuizSetupOpen(false);
+            setQuizPhrases(selected);
+          }}
+        />
+      )}
+
+      {quizPhrases && (
+        <QuizModal
+          phrases={quizPhrases}
+          onClose={() => setQuizPhrases(null)}
+        />
+      )}
+
+      {exportSetupOpen && (
+        <QuizSetupModal
+          phrases={phrases}
+          title="Select phrases to export"
+          actionLabel="Export"
+          onClose={() => setExportSetupOpen(false)}
+          onStart={selected => {
+            setExportSetupOpen(false);
+            setExportPhrases(selected);
+          }}
+        />
+      )}
+
+      {exportPhrases && (
+        <ExportModal
+          phrases={exportPhrases}
+          onClose={() => setExportPhrases(null)}
+        />
+      )}
+    </Box>
+  );
+}
+
+function QuizButton({ label, onClick, isComic }: { label: string; onClick: () => void; isComic: boolean }) {
+  const t = useTheme();
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={isComic ? {
+        background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+        fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
+        color: t.palette.text.primary, padding: '3px 8px',
+        border: `2px solid ${t.palette.text.primary}`, borderRadius: 1,
+        '&:hover': { backgroundColor: t.palette.text.primary, color: '#fff' },
+      } : {
+        background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+        fontSize: 13, fontStyle: 'italic', color: t.palette.text.disabled, padding: '2px 6px',
+        '&:hover': { color: t.palette.text.primary },
+      }}
+    >
+      {label}
     </Box>
   );
 }
