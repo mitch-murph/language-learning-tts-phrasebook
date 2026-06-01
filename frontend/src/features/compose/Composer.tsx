@@ -89,7 +89,7 @@ export default function Composer({ phrases, onSaved }: Props) {
     playRef.current = ctl;
     ctl.done
       .catch(e => {
-        if (e instanceof TtsError && e.noUrl) {
+        if (e instanceof TtsError && (e.noUrl || e.unauthorized)) {
           pendingActionRef.current = 'play';
           setShowTtsSetup(true);
         } else {
@@ -135,7 +135,7 @@ export default function Composer({ phrases, onSaved }: Props) {
       }, 1500);
       onSaved(phrase);
     } catch (e) {
-      if (e instanceof TtsError && e.noUrl) {
+      if (e instanceof TtsError && (e.noUrl || e.unauthorized)) {
         pendingActionRef.current = 'save';
         setShowTtsSetup(true);
       } else if (e instanceof TtsError && e.unsupportedLanguage && ttsCode !== FALLBACK_CODE) {

@@ -7,6 +7,7 @@ export class TtsError extends Error {
     message: string,
     public unsupportedLanguage: boolean,
     public noUrl = false,
+    public unauthorized = false,
   ) {
     super(message);
     this.name = 'TtsError';
@@ -43,7 +44,7 @@ export async function callTts(
         unsupported = true;
       }
     } catch { /* keep fallback message */ }
-    throw new TtsError(message, unsupported);
+    throw new TtsError(message, unsupported, false, res.status === 401);
   }
   const { audioContent } = await res.json();
   return audioContent as string;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
+import RepeatIcon from '@mui/icons-material/Repeat';
 import { getAudioUrl, type Phrase } from '../../api/client';
 import { playPhraseFromUrls, type Mode, type PlayController } from '../../playback/player';
 import ModeSelector from '../compose/ModeSelector';
@@ -40,6 +41,8 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
   const [mode, setMode] = useState<Mode>('normal');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [stageLabel, setStageLabel] = useState('');
+  const [loop, setLoop] = useState(false);
+  const loopRef = useRef(false);
   const [editing, setEditing] = useState<Phrase | null>(null);
   const [deletingPhrase, setDeletingPhrase] = useState<Phrase | null>(null);
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
@@ -49,6 +52,12 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
   const playRef = useRef<PlayController | null>(null);
 
   useEffect(() => () => { playRef.current?.stop(); }, []);
+
+  function toggleLoop() {
+    const next = !loopRef.current;
+    loopRef.current = next;
+    setLoop(next);
+  }
 
   function handlePlay(p: Phrase) {
     if (playingId === p.phraseId) {
@@ -61,22 +70,38 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
     playRef.current?.stop();
     setPlayingId(p.phraseId);
     setStageLabel('');
-    const ctl = playPhraseFromUrls({
-      normalUrl: getAudioUrl(p.normalS3Key),
-      slowUrl: getAudioUrl(p.slowS3Key),
-      mode,
-      onStage: ({ index, total }) => {
-        if (mode === 'drill') setStageLabel(`${index}/${total}`);
-      },
-    });
-    playRef.current = ctl;
-    ctl.done.finally(() => {
-      if (playRef.current === ctl) {
-        playRef.current = null;
-        setPlayingId(prev => (prev === p.phraseId ? null : prev));
+
+    function startPlay() {
+      const ctl = playPhraseFromUrls({
+        normalUrl: getAudioUrl(p.normalS3Key),
+        slowUrl: getAudioUrl(p.slowS3Key),
+        mode,
+        onStage: ({ index, total }) => {
+          if (mode === 'drill') setStageLabel(`${index}/${total}`);
+        },
+      });
+      playRef.current = ctl;
+      ctl.done.finally(() => {
+        if (playRef.current !== ctl) return;
         setStageLabel('');
-      }
-    });
+        if (loopRef.current) {
+          setTimeout(() => {
+            if (playRef.current !== ctl) return;
+            if (loopRef.current) {
+              startPlay();
+            } else {
+              playRef.current = null;
+              setPlayingId(prev => (prev === p.phraseId ? null : prev));
+            }
+          }, 3000);
+        } else {
+          playRef.current = null;
+          setPlayingId(prev => (prev === p.phraseId ? null : prev));
+        }
+      });
+    }
+
+    startPlay();
   }
 
   return (
@@ -101,8 +126,13 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
         </Box>
       </Box>
 
-      <Box sx={{ mb: isComic ? '10px' : '14px' }}>
+      <Box sx={{ mb: isComic ? '10px' : '14px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: isComic ? '10px' : '20px' }}>
         <ModeSelector value={mode} onChange={setMode} />
+        <Box sx={{
+          width: '1px', height: isComic ? '20px' : '16px', flexShrink: 0,
+          backgroundColor: isComic ? t.palette.text.primary : '#ddd',
+        }} />
+        <LoopPill active={loop} onClick={toggleLoop} />
       </Box>
 
       {error && (
@@ -200,6 +230,36 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
           onClose={() => setExportPhrases(null)}
         />
       )}
+    </Box>
+  );
+}
+
+function LoopPill({ active, onClick }: { active: boolean; onClick: () => void }) {
+  const t = useTheme();
+  const isComic = t.appName === 'comic';
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={isComic ? {
+        fontSize: 12, fontWeight: 700, padding: '6px 10px',
+        border: `2.5px solid ${t.palette.text.primary}`,
+        borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit',
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        backgroundColor: active ? t.palette.text.primary : t.palette.background.paper,
+        color: active ? '#fff' : t.palette.text.primary,
+      } : {
+        fontSize: 16, fontStyle: 'italic',
+        border: 'none', background: 'transparent', padding: 0, cursor: 'pointer',
+        fontFamily: 'inherit',
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        color: active ? t.palette.text.primary : t.palette.text.disabled,
+        '&:hover': { color: t.palette.text.secondary },
+      }}
+    >
+      <RepeatIcon sx={{ fontSize: isComic ? 14 : 16 }} />
+      Loop
     </Box>
   );
 }
