@@ -5,11 +5,12 @@ export interface UpdatePhraseInput {
   phraseId: string;
   transcription?: string;
   translation?: string;
+  tags?: string[];
 }
 
 export type UpdatePhraseFn = (input: UpdatePhraseInput) => Promise<Phrase>;
 
 export function makeUpdatePhrase(repo: IPhraseRepository): UpdatePhraseFn {
-  return async ({ phraseId, transcription, translation }) =>
-    repo.update(phraseId, { transcription, translation });
+  return async ({ phraseId, transcription, translation, tags }) =>
+    repo.update(phraseId, { transcription, translation, tags });
 }

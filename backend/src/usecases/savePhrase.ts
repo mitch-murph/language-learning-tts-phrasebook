@@ -11,6 +11,7 @@ export interface SavePhraseInput {
   slowAudioBase64: string;
   transcription?: string;
   translation?: string;
+  tags?: string[];
 }
 
 export type SavePhraseFn = (input: SavePhraseInput) => Promise<Phrase>;
@@ -33,6 +34,7 @@ export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): Sav
       slowS3Key,
       transcription: input.transcription,
       translation: input.translation,
+      tags: input.tags,
     });
 
     console.log("[save] done:", phrase.phraseId);

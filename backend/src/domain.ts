@@ -11,4 +11,5 @@ export interface Phrase {
   updatedAt?: string;
   transcription?: string;
   translation?: string;
+  tags?: string[];
 }

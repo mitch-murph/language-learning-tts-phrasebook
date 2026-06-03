@@ -7,7 +7,7 @@ export interface IPhraseRepository {
   save(input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase>;
   list(): Promise<Phrase[]>;
   delete(phraseId: string): Promise<void>;
-  update(phraseId: string, fields: { transcription?: string; translation?: string }): Promise<Phrase>;
+  update(phraseId: string, fields: { transcription?: string; translation?: string; tags?: string[] }): Promise<Phrase>;
 }
 
 const USER_ID = "default";
@@ -48,13 +48,14 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     );
   }
 
-  async update(phraseId: string, fields: { transcription?: string; translation?: string }): Promise<Phrase> {
+  async update(phraseId: string, fields: { transcription?: string; translation?: string; tags?: string[] }): Promise<Phrase> {
     const updatedAt = new Date().toISOString();
     const setParts = ["#ua = :ua"];
     const exprNames: Record<string, string> = { "#ua": "updatedAt" };
     const exprValues: Record<string, unknown> = { ":ua": updatedAt };
     if (fields.transcription !== undefined) { setParts.push("#tc = :tc"); exprNames["#tc"] = "transcription"; exprValues[":tc"] = fields.transcription; }
     if (fields.translation !== undefined) { setParts.push("#tr = :tr"); exprNames["#tr"] = "translation"; exprValues[":tr"] = fields.translation; }
+    if (fields.tags !== undefined) { setParts.push("#tg = :tg"); exprNames["#tg"] = "tags"; exprValues[":tg"] = fields.tags; }
     const result = await this.ddb.send(
       new UpdateCommand({
         TableName: this.tableName,

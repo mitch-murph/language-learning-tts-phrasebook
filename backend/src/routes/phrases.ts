@@ -19,12 +19,13 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const slowAudioBase64 = b.slowAudioBase64 as string | undefined;
       const transcription = b.transcription as string | undefined;
       const translation = b.translation as string | undefined;
+      const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
       if (!text) throw new ValidationError("Missing text");
       if (!languageName) throw new ValidationError("Missing languageName");
       if (typeof nonLatin !== "boolean") throw new ValidationError("Missing nonLatin");
       if (!normalAudioBase64) throw new ValidationError("Missing normalAudioBase64");
       if (!slowAudioBase64) throw new ValidationError("Missing slowAudioBase64");
-      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation });
+      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, tags });
     },
     async handleGet() {
       return list();
@@ -35,8 +36,11 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
     async handlePut(phraseId: string, rawBody: string) {
       let body: unknown;
       try { body = JSON.parse(rawBody); } catch { throw new ValidationError("Invalid JSON"); }
-      const { transcription, translation } = body as Record<string, string>;
-      return update({ phraseId, transcription, translation });
+      const b = body as Record<string, unknown>;
+      const transcription = b.transcription as string | undefined;
+      const translation = b.translation as string | undefined;
+      const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
+      return update({ phraseId, transcription, translation, tags });
     },
   };
 }
