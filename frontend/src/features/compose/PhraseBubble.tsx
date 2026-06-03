@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ChangeEvent } from 'react';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
+import TagEditor from '../library/TagEditor';
 
 interface Props {
   text: string;
@@ -10,6 +11,9 @@ interface Props {
   translation: string;
   onTranslationChange: (v: string) => void;
   showRomanization: boolean;
+  tags: string[];
+  onTagsChange: (tags: string[]) => void;
+  knownTags: string[];
   disabled?: boolean;
   stamped?: boolean;
 }
@@ -80,6 +84,12 @@ export default function PhraseBubble(props: Props) {
         }}
       />
       <MetaRow {...props} />
+      <Box sx={isComic
+        ? { mt: '10px', pt: '10px', borderTop: `2px dashed ${t.palette.text.primary}` }
+        : { pt: '14px', borderTop: '1px solid #e6e6e6' }
+      }>
+        <TagEditor value={props.tags} onChange={props.onTagsChange} knownTags={props.knownTags} disabled={props.disabled} />
+      </Box>
       {props.stamped && <SavedStamp isComic={isComic} />}
     </Box>
   );

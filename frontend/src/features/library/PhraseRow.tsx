@@ -66,6 +66,26 @@ export default function PhraseRow({ phrase, isPlaying, stageLabel, onPlay, onEdi
           }}>{phrase.translation}</Box>
         )}
 
+        {phrase.tags && phrase.tags.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px', mt: isComic ? '6px' : '7px' }}>
+            {phrase.tags.map(tag => (
+              <Box key={tag} sx={isComic ? {
+                fontSize: 9, fontWeight: 800, letterSpacing: '0.06em',
+                padding: '2px 7px',
+                border: `1.5px solid ${t.palette.text.disabled}`,
+                borderRadius: 999,
+                color: t.palette.text.disabled,
+              } : {
+                fontSize: 10, fontStyle: 'italic',
+                padding: '1px 7px',
+                border: '1px solid #ddd',
+                borderRadius: 999,
+                color: '#bbb',
+              }}>{tag}</Box>
+            ))}
+          </Box>
+        )}
+
         <Box sx={{
           textTransform: 'uppercase', color: t.palette.text.disabled,
           ...(isComic

@@ -36,6 +36,7 @@ export default function Composer({ phrases, onSaved }: Props) {
   const [lang, setLang] = useState<Language | null>(null);
   const [transcription, setTranscription] = useState('');
   const [translation, setTranslation] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode>('normal');
   const [status, setStatus] = useState<{ kind: 'error' | 'retry'; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,6 +53,11 @@ export default function Composer({ phrases, onSaved }: Props) {
   const languages = useMemo(
     () => mergeLanguages(languagesFromPhrases(phrases), sessionAdded),
     [phrases, sessionAdded],
+  );
+
+  const knownTags = useMemo(
+    () => [...new Set(phrases.flatMap(p => p.tags ?? []))].sort(),
+    [phrases],
   );
 
   useEffect(() => () => {
@@ -123,6 +129,7 @@ export default function Composer({ phrases, onSaved }: Props) {
         slowAudioBase64,
         transcription: transcription.trim() || undefined,
         translation: translation.trim() || undefined,
+        tags: tags.length > 0 ? tags : undefined,
       });
       if (stampTimerRef.current) clearTimeout(stampTimerRef.current);
       setSavedStamp(true);
@@ -131,6 +138,7 @@ export default function Composer({ phrases, onSaved }: Props) {
         setText('');
         setTranscription('');
         setTranslation('');
+        setTags([]);
         stampTimerRef.current = null;
       }, 1500);
       onSaved(phrase);
@@ -209,6 +217,7 @@ export default function Composer({ phrases, onSaved }: Props) {
         transcription={transcription} onTranscriptionChange={setTranscription}
         translation={translation} onTranslationChange={setTranslation}
         showRomanization={lang?.nonLatin ?? false}
+        tags={tags} onTagsChange={setTags} knownTags={knownTags}
         disabled={busy}
         stamped={savedStamp}
       />

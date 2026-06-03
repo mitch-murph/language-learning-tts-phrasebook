@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
@@ -50,6 +50,21 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
   const [exportSetupOpen, setExportSetupOpen] = useState(false);
   const [exportPhrases, setExportPhrases] = useState<Phrase[] | null>(null);
   const playRef = useRef<PlayController | null>(null);
+
+  const knownTags = useMemo(
+    () => [...new Set(phrases.flatMap(p => p.tags ?? []))].sort(),
+    [phrases],
+  );
+
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const filteredPhrases = selectedTags.length === 0
+    ? phrases
+    : phrases.filter(p => p.tags?.some(tag => selectedTags.includes(tag)));
+
+  function toggleTagFilter(tag: string) {
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  }
 
   useEffect(() => () => { playRef.current?.stop(); }, []);
 
@@ -133,6 +148,47 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
           backgroundColor: isComic ? t.palette.text.primary : '#ddd',
         }} />
         <LoopPill active={loop} onClick={toggleLoop} />
+        {knownTags.length > 0 && (
+          <>
+            <Box sx={{
+              width: '1px', height: isComic ? '20px' : '16px', flexShrink: 0,
+              backgroundColor: isComic ? t.palette.text.primary : '#ddd',
+            }} />
+            {knownTags.map(tag => {
+              const active = selectedTags.includes(tag);
+              return (
+                <Box
+                  key={tag}
+                  component="button"
+                  type="button"
+                  onClick={() => toggleTagFilter(tag)}
+                  sx={isComic ? {
+                    fontSize: 11, fontWeight: 700,
+                    padding: '3px 10px',
+                    border: `2px solid ${t.palette.text.primary}`,
+                    borderRadius: 999,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    backgroundColor: active ? t.palette.text.primary : 'transparent',
+                    color: active ? '#fff' : t.palette.text.primary,
+                    transition: 'background-color 0.1s',
+                  } : {
+                    fontSize: 12, fontStyle: 'italic',
+                    padding: '2px 9px',
+                    border: `1px solid ${active ? t.palette.text.primary : '#ccc'}`,
+                    borderRadius: 999,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    backgroundColor: active ? t.palette.text.primary : 'transparent',
+                    color: active ? '#fff' : t.palette.text.secondary,
+                    transition: 'all 0.1s',
+                    '&:hover': { borderColor: t.palette.text.primary, color: active ? '#fff' : t.palette.text.primary },
+                  }}
+                >
+                  {tag}
+                </Box>
+              );
+            })}
+          </>
+        )}
       </Box>
 
       {error && (
@@ -155,7 +211,7 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
         </Box>
       )}
 
-      {groupByLanguageName(phrases).map(([name, group]) => (
+      {groupByLanguageName(filteredPhrases).map(([name, group]) => (
         <LanguageGroup key={name.toLowerCase()} name={name} count={group.length}>
           {group.map(p => (
             <PhraseRow
@@ -174,6 +230,7 @@ export default function Library({ phrases, loading, error, onUpdated, onDeleted 
       {editing && (
         <EditPhraseModal
           phrase={editing}
+          knownTags={knownTags}
           onClose={() => setEditing(null)}
           onSaved={(updated) => {
             onUpdated(updated);

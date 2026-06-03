@@ -10,18 +10,21 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { updatePhrase, type Phrase } from '../../api/client';
+import TagEditor from './TagEditor';
 
 interface Props {
   phrase: Phrase;
+  knownTags: string[];
   onClose: () => void;
   onSaved: (updated: Phrase) => void;
 }
 
-export default function EditPhraseModal({ phrase, onClose, onSaved }: Props) {
+export default function EditPhraseModal({ phrase, knownTags, onClose, onSaved }: Props) {
   const t = useTheme();
   const isComic = t.appName === 'comic';
   const [transcription, setTranscription] = useState(phrase.transcription ?? '');
   const [translation, setTranslation] = useState(phrase.translation ?? '');
+  const [tags, setTags] = useState<string[]>(phrase.tags ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +37,7 @@ export default function EditPhraseModal({ phrase, onClose, onSaved }: Props) {
       const updated = await updatePhrase(phrase.phraseId, {
         transcription: transcription.trim() || undefined,
         translation: translation.trim() || undefined,
+        tags,
       });
       onSaved(updated);
     } catch (e) {
@@ -94,6 +98,16 @@ export default function EditPhraseModal({ phrase, onClose, onSaved }: Props) {
             disabled={saving}
             slotProps={{ inputLabel: { shrink: true } }}
           />
+          <Box>
+            <Typography sx={{
+              fontSize: 10, textTransform: 'uppercase',
+              letterSpacing: isComic ? '0.10em' : '0.12em',
+              color: t.palette.text.disabled,
+              fontWeight: isComic ? 800 : 400,
+              mb: '8px',
+            }}>Tags</Typography>
+            <TagEditor value={tags} onChange={setTags} knownTags={knownTags} disabled={saving} />
+          </Box>
         </Stack>
 
         {error && (
