@@ -1,6 +1,6 @@
 # Language Learning TTS Phrasebook
 
-A personal language learning web app. Type a phrase, hear it spoken at a slow "language teacher" pace via a custom Google TTS endpoint. Save phrases to a library with optional romanization and English translation. Mobile and desktop friendly. Two themes (comic / ink) and four playback modes (Triple / Slow / Normal / Drill).
+A personal language learning web app. Type a phrase, hear it spoken at a slow "language teacher" pace via a custom Google TTS endpoint. Save phrases to a library with optional romanization and English translation. Mobile and desktop friendly. Two themes (comic / ink) and three playback modes (Normal / Slow / Drill).
 
 ## Stack
 
@@ -72,7 +72,7 @@ language-learning-tts-phrasebook/
 │       │   ├── tts.ts          ← browser TTS proxy call (Pace-aware)
 │       │   └── crypto.ts       ← HMAC-TOTP via Web Crypto API
 │       ├── domain/languages.ts ← language catalog + needsRomanization()
-│       └── playback/player.ts  ← mode sequencer (slow/normal/triple/drill)
+│       └── playback/player.ts  ← mode sequencer (normal/slow/drill)
 └── backend/
     └── src/
         ├── handler.ts          ← Lambda entry + composition root (wires deps)
@@ -118,7 +118,7 @@ Organised by feature, not by file type. MUI handles all visual styling via two `
 | `features/library/` | Phrase list grouped by language; play / edit / delete-confirm modals. |
 | `features/settings/` | TTS proxy URL + audio base URL modal. |
 | `api/` | Lambda CRUD (`client.ts`), browser TTS call (`tts.ts`), HMAC-TOTP (`crypto.ts`). |
-| `playback/player.ts` | Mode sequencer with cancellable `PlayController`. Triple = slow→slow→normal; Drill = looped slow; otherwise single play. In-memory cache by `(lang, pace, text)` so re-pressing Play doesn't re-fetch. |
+| `playback/player.ts` | Mode sequencer with cancellable `PlayController`. Drill = normal→slow→normal with 2s gaps; otherwise single play at the selected pace. In-memory cache by `(lang, pace, text)` so re-pressing Play doesn't re-fetch. |
 | `domain/languages.ts` | Static language catalog with display colour swatches; `needsRomanization()` decides whether to show the romanisation field. |
 
 ## Key Design Decisions
