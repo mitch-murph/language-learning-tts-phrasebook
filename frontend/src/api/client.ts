@@ -15,6 +15,7 @@ export interface Phrase {
   updatedAt?: string;
   transcription?: string;
   translation?: string;
+  translationS3Key?: string;
   tags?: string[];
 }
 
@@ -43,6 +44,7 @@ export async function savePhrase(args: {
   slowAudioBase64: string;
   transcription?: string;
   translation?: string;
+  translationAudioBase64?: string;
   tags?: string[];
 }): Promise<Phrase> {
   const res = await fetch(`${LAMBDA_URL}/phrases`, {
@@ -63,7 +65,7 @@ export async function listPhrases(): Promise<Phrase[]> {
 
 export async function updatePhrase(
   phraseId: string,
-  fields: { transcription?: string; translation?: string; tags?: string[] },
+  fields: { transcription?: string; translation?: string; translationAudioBase64?: string; tags?: string[] },
 ): Promise<Phrase> {
   const res = await fetch(`${LAMBDA_URL}/phrases/${phraseId}`, {
     method: 'PUT',

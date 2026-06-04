@@ -116,9 +116,14 @@ export default function Composer({ phrases, onSaved }: Props) {
     if (!trimmed || !lang) return;
     setSaving(true);
     try {
-      const [normalAudioBase64, slowAudioBase64] = await Promise.all([
+      const translationTrimmed = translation.trim();
+      const translationPromise = translationTrimmed
+        ? callTts(translationTrimmed, 'en-US', 'normal', '', 'Speak in a fast, neutral, even tone.')
+        : Promise.resolve<string | undefined>(undefined);
+      const [normalAudioBase64, slowAudioBase64, translationAudioBase64] = await Promise.all([
         callTts(trimmed, ttsCode, 'normal', lang?.name ?? ''),
         callTts(trimmed, ttsCode, 'slow', lang?.name ?? ''),
+        translationPromise,
       ]);
       const phrase = await savePhrase({
         text: trimmed,
@@ -128,7 +133,8 @@ export default function Composer({ phrases, onSaved }: Props) {
         normalAudioBase64,
         slowAudioBase64,
         transcription: transcription.trim() || undefined,
-        translation: translation.trim() || undefined,
+        translation: translationTrimmed || undefined,
+        translationAudioBase64: translationAudioBase64 ?? undefined,
         tags: tags.length > 0 ? tags : undefined,
       });
       if (stampTimerRef.current) clearTimeout(stampTimerRef.current);
