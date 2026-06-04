@@ -1,0 +1,1 @@
+{"root":["./src/domain.ts","./src/handler.ts","./src/repositories/phraserepository.ts","./src/routes/phrases.ts","./src/services/audiostore.ts","./src/usecases/deletephrase.ts","./src/usecases/listphrases.ts","./src/usecases/savephrase.ts","./src/usecases/updatephrase.ts","./src/utils/auth.ts"],"version":"5.9.3"}

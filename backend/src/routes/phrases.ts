@@ -25,7 +25,8 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       if (typeof nonLatin !== "boolean") throw new ValidationError("Missing nonLatin");
       if (!normalAudioBase64) throw new ValidationError("Missing normalAudioBase64");
       if (!slowAudioBase64) throw new ValidationError("Missing slowAudioBase64");
-      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, tags });
+      const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
+      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, translationAudioBase64, tags });
     },
     async handleGet() {
       return list();
@@ -39,8 +40,9 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const b = body as Record<string, unknown>;
       const transcription = b.transcription as string | undefined;
       const translation = b.translation as string | undefined;
+      const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
       const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
-      return update({ phraseId, transcription, translation, tags });
+      return update({ phraseId, transcription, translation, translationAudioBase64, tags });
     },
   };
 }

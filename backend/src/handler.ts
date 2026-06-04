@@ -19,7 +19,7 @@ const phrases = makePhrasesRoute(
   makeSavePhrase(audio, repo),
   makeListPhrases(repo),
   makeDeletePhrase(repo),
-  makeUpdatePhrase(repo)
+  makeUpdatePhrase(audio, repo)
 );
 
 const CORS = {
