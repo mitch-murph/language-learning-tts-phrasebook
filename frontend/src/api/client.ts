@@ -1,4 +1,5 @@
 import { generateToken } from './crypto';
+import { getNamespace } from './namespace';
 
 const LAMBDA_URL = (import.meta.env.VITE_LAMBDA_URL ?? '').replace(/\/$/, '');
 const AUDIO_BASE_URL = (import.meta.env.VITE_AUDIO_BASE_URL ?? '').replace(/\/$/, '');
@@ -24,10 +25,13 @@ export function getAudioUrl(s3Key: string): string {
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
-  return {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-app-token': await generateToken(),
   };
+  const namespace = getNamespace();
+  if (namespace) headers['x-namespace'] = namespace;
+  return headers;
 }
 
 async function readError(res: Response): Promise<string> {
