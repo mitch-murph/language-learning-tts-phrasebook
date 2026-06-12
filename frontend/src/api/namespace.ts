@@ -1,26 +1,16 @@
 const STORAGE_KEY = 'phrasebook.namespace';
 
 /**
- * Removes the `k` param from the URL hash without reloading, preserving any
- * other hash params, so the namespace word doesn't linger in the address bar
- * or browser history after it's been captured.
- */
-function stripKeyFromHash(): void {
-  const raw = window.location.hash.replace(/^#/, '');
-  const params = new URLSearchParams(raw);
-  params.delete('k');
-  const rest = params.toString();
-  const url = window.location.pathname + window.location.search + (rest ? `#${rest}` : '');
-  window.history.replaceState(null, '', url);
-}
-
-/**
  * Applies a `#k=…` fragment to the stored namespace, returning true if the
  * active namespace actually changed.
  *
  *   #k=marmalade  → switch to private library "marmalade"
  *   #k=           → switch back to the shared "default" library
  *   (no k param)  → no change; keep whatever was last selected
+ *
+ * The `#k=` is deliberately left in the URL so the page can be bookmarked /
+ * added to the home screen and re-apply the library on every visit — important
+ * on iOS, where localStorage is evicted after ~7 days of inactivity.
  */
 function applyHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '');
@@ -34,7 +24,6 @@ function applyHash(): boolean {
 
   if (next) localStorage.setItem(STORAGE_KEY, next);
   else localStorage.removeItem(STORAGE_KEY);
-  stripKeyFromHash();
 
   return next !== prev;
 }
