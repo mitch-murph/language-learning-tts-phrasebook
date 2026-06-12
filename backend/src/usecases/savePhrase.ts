@@ -15,10 +15,10 @@ export interface SavePhraseInput {
   tags?: string[];
 }
 
-export type SavePhraseFn = (input: SavePhraseInput) => Promise<Phrase>;
+export type SavePhraseFn = (userId: string, input: SavePhraseInput) => Promise<Phrase>;
 
 export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): SavePhraseFn {
-  return async (input) => {
+  return async (userId, input) => {
     console.log(`[save] uploading to s3: "${input.text}" (${input.languageCode})`);
     const uploads: Promise<string>[] = [
       audio.upload(input.text, input.languageCode, input.normalAudioBase64, "normal"),
@@ -30,7 +30,7 @@ export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): Sav
     const [normalS3Key, slowS3Key, translationS3Key] = await Promise.all(uploads);
 
     console.log("[save] writing to db:", normalS3Key, slowS3Key);
-    const phrase = await repo.save({
+    const phrase = await repo.save(userId, {
       text: input.text,
       languageCode: input.languageCode,
       languageName: input.languageName,

@@ -4,23 +4,21 @@ import { randomUUID } from "crypto";
 import type { Phrase } from "../domain";
 
 export interface IPhraseRepository {
-  save(input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase>;
-  list(): Promise<Phrase[]>;
-  delete(phraseId: string): Promise<void>;
-  update(phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase>;
+  save(userId: string, input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase>;
+  list(userId: string): Promise<Phrase[]>;
+  delete(userId: string, phraseId: string): Promise<void>;
+  update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase>;
 }
-
-const USER_ID = "default";
 
 export class DynamoDbPhraseRepository implements IPhraseRepository {
   private ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
   constructor(private tableName: string) {}
 
-  async save(input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase> {
+  async save(userId: string, input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase> {
     const phrase: Phrase = {
       ...input,
-      userId: USER_ID,
+      userId,
       phraseId: randomUUID(),
       createdAt: new Date().toISOString(),
     };
@@ -28,12 +26,12 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     return phrase;
   }
 
-  async list(): Promise<Phrase[]> {
+  async list(userId: string): Promise<Phrase[]> {
     const result = await this.ddb.send(
       new QueryCommand({
         TableName: this.tableName,
         KeyConditionExpression: "userId = :uid",
-        ExpressionAttributeValues: { ":uid": USER_ID },
+        ExpressionAttributeValues: { ":uid": userId },
       })
     );
     const items = (result.Items ?? []) as Phrase[];
@@ -42,13 +40,13 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     );
   }
 
-  async delete(phraseId: string): Promise<void> {
+  async delete(userId: string, phraseId: string): Promise<void> {
     await this.ddb.send(
-      new DeleteCommand({ TableName: this.tableName, Key: { userId: USER_ID, phraseId } })
+      new DeleteCommand({ TableName: this.tableName, Key: { userId, phraseId } })
     );
   }
 
-  async update(phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase> {
+  async update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase> {
     const updatedAt = new Date().toISOString();
     const setParts = ["#ua = :ua"];
     const exprNames: Record<string, string> = { "#ua": "updatedAt" };
@@ -60,7 +58,7 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     const result = await this.ddb.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { userId: USER_ID, phraseId },
+        Key: { userId, phraseId },
         UpdateExpression: `SET ${setParts.join(", ")}`,
         ExpressionAttributeNames: exprNames,
         ExpressionAttributeValues: exprValues,

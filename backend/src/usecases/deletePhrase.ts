@@ -1,10 +1,10 @@
 import type { IPhraseRepository } from "../repositories/phraseRepository";
 
-export type DeletePhraseFn = (phraseId: string) => Promise<{ success: true }>;
+export type DeletePhraseFn = (userId: string, phraseId: string) => Promise<{ success: true }>;
 
 export function makeDeletePhrase(repo: IPhraseRepository): DeletePhraseFn {
-  return async (phraseId) => {
-    await repo.delete(phraseId);
+  return async (userId, phraseId) => {
+    await repo.delete(userId, phraseId);
     return { success: true };
   };
 }

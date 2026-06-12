@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { verifyToken } from "./utils/auth";
+import { resolveUserId } from "./utils/namespace";
 import { makePhrasesRoute, ValidationError } from "./routes/phrases";
 import { DynamoDbPhraseRepository } from "./repositories/phraseRepository";
 import { S3AudioStore } from "./services/audioStore";
@@ -24,7 +25,7 @@ const phrases = makePhrasesRoute(
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type,x-app-token",
+  "Access-Control-Allow-Headers": "content-type,x-app-token,x-namespace",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
 };
 
@@ -50,19 +51,21 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     return fail(401, "Invalid or expired token");
   }
 
+  const userId = resolveUserId(event.headers["x-namespace"]);
+
   try {
     if (method === "GET" && path === "/phrases") {
-      return ok(await phrases.handleGet());
+      return ok(await phrases.handleGet(userId));
     }
     if (method === "POST" && path === "/phrases") {
-      return ok(await phrases.handlePost(event.body ?? "{}"));
+      return ok(await phrases.handlePost(userId, event.body ?? "{}"));
     }
     const phraseMatch = path.match(/^\/phrases\/([^/]+)$/);
     if (method === "DELETE" && phraseMatch) {
-      return ok(await phrases.handleDelete(phraseMatch[1]));
+      return ok(await phrases.handleDelete(userId, phraseMatch[1]));
     }
     if (method === "PUT" && phraseMatch) {
-      return ok(await phrases.handlePut(phraseMatch[1], event.body ?? "{}"));
+      return ok(await phrases.handlePut(userId, phraseMatch[1], event.body ?? "{}"));
     }
     return fail(404, "Not found");
   } catch (e) {

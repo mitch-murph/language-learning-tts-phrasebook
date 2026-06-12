@@ -7,7 +7,7 @@ export class ValidationError extends Error {}
 
 export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete_: DeletePhraseFn, update: UpdatePhraseFn) {
   return {
-    async handlePost(rawBody: string) {
+    async handlePost(userId: string, rawBody: string) {
       let body: unknown;
       try { body = JSON.parse(rawBody); } catch { throw new ValidationError("Invalid JSON"); }
       const b = body as Record<string, unknown>;
@@ -26,15 +26,15 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       if (!normalAudioBase64) throw new ValidationError("Missing normalAudioBase64");
       if (!slowAudioBase64) throw new ValidationError("Missing slowAudioBase64");
       const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
-      return save({ text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, translationAudioBase64, tags });
+      return save(userId, { text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, translationAudioBase64, tags });
     },
-    async handleGet() {
-      return list();
+    async handleGet(userId: string) {
+      return list(userId);
     },
-    async handleDelete(phraseId: string) {
-      return delete_(phraseId);
+    async handleDelete(userId: string, phraseId: string) {
+      return delete_(userId, phraseId);
     },
-    async handlePut(phraseId: string, rawBody: string) {
+    async handlePut(userId: string, phraseId: string, rawBody: string) {
       let body: unknown;
       try { body = JSON.parse(rawBody); } catch { throw new ValidationError("Invalid JSON"); }
       const b = body as Record<string, unknown>;
@@ -42,7 +42,7 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const translation = b.translation as string | undefined;
       const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
       const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
-      return update({ phraseId, transcription, translation, translationAudioBase64, tags });
+      return update(userId, { phraseId, transcription, translation, translationAudioBase64, tags });
     },
   };
 }

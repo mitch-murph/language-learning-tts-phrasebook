@@ -10,14 +10,14 @@ export interface UpdatePhraseInput {
   tags?: string[];
 }
 
-export type UpdatePhraseFn = (input: UpdatePhraseInput) => Promise<Phrase>;
+export type UpdatePhraseFn = (userId: string, input: UpdatePhraseInput) => Promise<Phrase>;
 
 export function makeUpdatePhrase(audio: IAudioStore, repo: IPhraseRepository): UpdatePhraseFn {
-  return async ({ phraseId, transcription, translation, translationAudioBase64, tags }) => {
+  return async (userId, { phraseId, transcription, translation, translationAudioBase64, tags }) => {
     let translationS3Key: string | undefined;
     if (translation && translationAudioBase64) {
       translationS3Key = await audio.upload(translation, "en-US", translationAudioBase64, "translation");
     }
-    return repo.update(phraseId, { transcription, translation, translationS3Key, tags });
+    return repo.update(userId, phraseId, { transcription, translation, translationS3Key, tags });
   };
 }
