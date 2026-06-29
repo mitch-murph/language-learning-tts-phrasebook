@@ -23,6 +23,20 @@ components:
         HMAC-SHA256 TOTP token. Computed as `HMAC-SHA256(HMAC_SECRET, floor(Date.now() / 30000))`,
         hex-encoded. Expires every 30 seconds; the server accepts the current and previous window.
 
+  parameters:
+    Namespace:
+      name: x-namespace
+      in: header
+      required: false
+      description: >
+        Optional private-library selector. When present, phrases are read and written
+        in an isolated DynamoDB partition keyed by a hash of this value (normalised:
+        trimmed + lowercased). Absent ⇒ the shared `default` library. The browser
+        supplies it from a `#k=<word>` URL fragment persisted to localStorage.
+      schema:
+        type: string
+      example: "marmalade"
+
   schemas:
     Phrase:
       type: object
@@ -147,9 +161,11 @@ components:
 
 paths:
   /phrases:
+    parameters:
+      - $ref: "#/components/parameters/Namespace"
     get:
       summary: List all saved phrases
-      description: Returns all phrases for the default user, sorted by `createdAt` descending.
+      description: Returns all phrases in the active library (see `x-namespace`), sorted by `createdAt` descending.
       operationId: listPhrases
       responses:
         "200":
@@ -212,6 +228,7 @@ paths:
         schema:
           type: string
           format: uuid
+      - $ref: "#/components/parameters/Namespace"
 
     put:
       summary: Update a phrase
