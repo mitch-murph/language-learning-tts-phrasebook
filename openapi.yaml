@@ -91,6 +91,12 @@ components:
           items:
             type: string
           example: ["greetings", "daily"]
+        hide:
+          type: boolean
+          description: >
+            Not used by this frontend. Set/read by other API consumers to hide a phrase
+            from their own UI without deleting it.
+          example: false
 
     SavePhraseRequest:
       type: object
@@ -132,6 +138,12 @@ components:
           items:
             type: string
           example: ["greetings", "daily"]
+        hide:
+          type: boolean
+          description: >
+            Not used by this frontend. Set by other API consumers to hide a phrase
+            from their own UI without deleting it.
+          example: false
 
     UpdatePhraseRequest:
       type: object
@@ -147,8 +159,11 @@ components:
           items:
             type: string
           example: ["greetings", "daily"]
+        hide:
+          type: boolean
+          example: false
       description: >
-        Only `transcription`, `translation`, and `tags` can be updated. Text and audio are
+        Only `transcription`, `translation`, `tags`, and `hide` can be updated. Text and audio are
         immutable — changing them would require a new TTS call and a new save.
 
     Error:

@@ -13,4 +13,5 @@ export interface Phrase {
   translation?: string;
   translationS3Key?: string;
   tags?: string[];
+  hide?: boolean;
 }

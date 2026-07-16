@@ -13,6 +13,7 @@ export interface SavePhraseInput {
   translation?: string;
   translationAudioBase64?: string;
   tags?: string[];
+  hide?: boolean;
 }
 
 export type SavePhraseFn = (userId: string, input: SavePhraseInput) => Promise<Phrase>;
@@ -41,6 +42,7 @@ export function makeSavePhrase(audio: IAudioStore, repo: IPhraseRepository): Sav
       translation: input.translation,
       translationS3Key,
       tags: input.tags,
+      hide: input.hide,
     });
 
     console.log("[save] done:", phrase.phraseId);

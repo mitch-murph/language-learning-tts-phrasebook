@@ -7,7 +7,7 @@ export interface IPhraseRepository {
   save(userId: string, input: Omit<Phrase, "phraseId" | "userId" | "createdAt" | "updatedAt">): Promise<Phrase>;
   list(userId: string): Promise<Phrase[]>;
   delete(userId: string, phraseId: string): Promise<void>;
-  update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase>;
+  update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[]; hide?: boolean }): Promise<Phrase>;
 }
 
 export class DynamoDbPhraseRepository implements IPhraseRepository {
@@ -46,7 +46,7 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     );
   }
 
-  async update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[] }): Promise<Phrase> {
+  async update(userId: string, phraseId: string, fields: { transcription?: string; translation?: string; translationS3Key?: string; tags?: string[]; hide?: boolean }): Promise<Phrase> {
     const updatedAt = new Date().toISOString();
     const setParts = ["#ua = :ua"];
     const exprNames: Record<string, string> = { "#ua": "updatedAt" };
@@ -55,6 +55,7 @@ export class DynamoDbPhraseRepository implements IPhraseRepository {
     if (fields.translation !== undefined) { setParts.push("#tr = :tr"); exprNames["#tr"] = "translation"; exprValues[":tr"] = fields.translation; }
     if (fields.translationS3Key !== undefined) { setParts.push("#ts = :ts"); exprNames["#ts"] = "translationS3Key"; exprValues[":ts"] = fields.translationS3Key; }
     if (fields.tags !== undefined) { setParts.push("#tg = :tg"); exprNames["#tg"] = "tags"; exprValues[":tg"] = fields.tags; }
+    if (fields.hide !== undefined) { setParts.push("#hd = :hd"); exprNames["#hd"] = "hide"; exprValues[":hd"] = fields.hide; }
     const result = await this.ddb.send(
       new UpdateCommand({
         TableName: this.tableName,

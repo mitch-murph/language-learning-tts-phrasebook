@@ -8,16 +8,17 @@ export interface UpdatePhraseInput {
   translation?: string;
   translationAudioBase64?: string;
   tags?: string[];
+  hide?: boolean;
 }
 
 export type UpdatePhraseFn = (userId: string, input: UpdatePhraseInput) => Promise<Phrase>;
 
 export function makeUpdatePhrase(audio: IAudioStore, repo: IPhraseRepository): UpdatePhraseFn {
-  return async (userId, { phraseId, transcription, translation, translationAudioBase64, tags }) => {
+  return async (userId, { phraseId, transcription, translation, translationAudioBase64, tags, hide }) => {
     let translationS3Key: string | undefined;
     if (translation && translationAudioBase64) {
       translationS3Key = await audio.upload(translation, "en-US", translationAudioBase64, "translation");
     }
-    return repo.update(userId, phraseId, { transcription, translation, translationS3Key, tags });
+    return repo.update(userId, phraseId, { transcription, translation, translationS3Key, tags, hide });
   };
 }

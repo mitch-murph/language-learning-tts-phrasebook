@@ -20,13 +20,14 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const transcription = b.transcription as string | undefined;
       const translation = b.translation as string | undefined;
       const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
+      const hide = typeof b.hide === "boolean" ? b.hide : undefined;
       if (!text) throw new ValidationError("Missing text");
       if (!languageName) throw new ValidationError("Missing languageName");
       if (typeof nonLatin !== "boolean") throw new ValidationError("Missing nonLatin");
       if (!normalAudioBase64) throw new ValidationError("Missing normalAudioBase64");
       if (!slowAudioBase64) throw new ValidationError("Missing slowAudioBase64");
       const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
-      return save(userId, { text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, translationAudioBase64, tags });
+      return save(userId, { text, languageCode, languageName, nonLatin, normalAudioBase64, slowAudioBase64, transcription, translation, translationAudioBase64, tags, hide });
     },
     async handleGet(userId: string) {
       return list(userId);
@@ -42,7 +43,8 @@ export function makePhrasesRoute(save: SavePhraseFn, list: ListPhrasesFn, delete
       const translation = b.translation as string | undefined;
       const translationAudioBase64 = b.translationAudioBase64 as string | undefined;
       const tags = Array.isArray(b.tags) ? (b.tags as string[]).filter(t => typeof t === "string") : undefined;
-      return update(userId, { phraseId, transcription, translation, translationAudioBase64, tags });
+      const hide = typeof b.hide === "boolean" ? b.hide : undefined;
+      return update(userId, { phraseId, transcription, translation, translationAudioBase64, tags, hide });
     },
   };
 }
